@@ -1,0 +1,998 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<title>LPH 3 Entwurfsplanung — {{PROJEKT_NR}} — Gutthann HIW Architekten</title>
+<style>
+
+*, *::before, *::after { box-sizing: border-box; margin:0; padding:0; }
+
+@media print {
+  @page { size: A4 landscape; margin: 6mm 8mm 8mm 8mm; }
+  .toolbar, #file-sidebar, .edit-hint, .add-row-btn, #toast { display:none !important; }
+  .side-col { display:none !important; }
+  * { box-shadow:none !important; text-shadow:none !important; }
+  html, body { background:#fff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; margin:0; padding:0; }
+  body { font-size: 9.5pt; line-height:1.5; }
+  .doc-wrapper { display:block !important; background:#fff !important; }
+  .a4-sheet { box-shadow:none !important; border-radius:0 !important; margin:0; padding:0; width:100% !important; max-width:100% !important; background:#fff !important; border:none !important; outline:none !important; }
+  .doc-main { padding:0; margin:0; background:#fff !important; }
+  .toolbar { box-shadow:none !important; }
+  .page-break { page-break-before: always; }
+  .chapter-page { page-break-before: always; padding: 4mm 2mm !important; background:#fff !important; }
+  .title-page { page-break-after: always; page-break-inside: avoid; min-height:auto; height:auto; padding:0 !important; background:#fff !important; }
+  .title-content { margin:0 8mm !important; padding:6px 8mm 6mm 8mm !important; }
+  .title-bg { background:#fff !important; }
+  .title-bg img { opacity:.15; }
+  .title-meta { bottom:4mm !important; right:8mm !important; font-size:9pt; }
+  .title-meta strong { font-size:11pt; }
+  .proj-title { font-size:22pt; }
+  .proj-sub { font-size:11pt; }
+  table { page-break-inside: avoid; font-size: 8.5pt; margin:6px 0 10px 0; }
+  th { padding:5px 8px; font-size:8.5pt; background:#1a1a1a !important; color:#fff !important; -webkit-print-color-adjust:exact !important; print-color-adjust:exact !important; }
+  td { padding:5px 8px; word-wrap:break-word; overflow-wrap:break-word; }
+  .proj-table td:first-child { width:190px; }
+  .chapter-banner { page-break-after: avoid; page-break-inside: avoid; margin-bottom:8px; -webkit-print-color-adjust:exact !important; print-color-adjust:exact !important; }
+  .ch-label, .ch-num, .ch-title { background:#1a1a1a !important; color:#fff !important; -webkit-print-color-adjust:exact !important; print-color-adjust:exact !important; }
+  .ch-label { font-size:8.5pt; padding:5px 10px; }
+  .ch-num { font-size:8.5pt; padding:5px 10px; border-left:1px solid #fff; border-right:1px solid #fff; }
+  .ch-title { font-size:8.5pt; padding:5px 12px; }
+  .toc-header { background:#1a1a1a !important; color:#fff !important; -webkit-print-color-adjust:exact !important; print-color-adjust:exact !important; }
+  .risk-tag { -webkit-print-color-adjust:exact !important; print-color-adjust:exact !important; }
+  .risk-tag.risk-high { background:#c0392b !important; color:#fff !important; }
+  .risk-tag.risk-mid { background:#e67e22 !important; color:#fff !important; }
+  .risk-tag.risk-low { background:#7f8c8d !important; color:#fff !important; }
+  .risk-tag.risk-none { background:#e5e5e5 !important; color:#333 !important; }
+  .goal-card { border:1.5px solid #1a1a1a !important; }
+  .goal-card-header { border-left:5px solid #1a1a1a !important; border-bottom:2px solid #1a1a1a !important; color:#1a1a1a !important; -webkit-print-color-adjust:exact !important; print-color-adjust:exact !important; }
+  .lph-pip.active { background:#1a1a1a !important; color:#fff !important; -webkit-print-color-adjust:exact !important; print-color-adjust:exact !important; }
+  .side-col { -webkit-print-color-adjust:exact !important; print-color-adjust:exact !important; }
+  .source-block { font-size:7pt; color:#444; margin-top:8px; padding-top:6px; border-top:1px dashed #999; }
+  .source-block strong { display:block; margin-bottom:3px; color:#1a1a1a; letter-spacing:.3px; }
+  .sec-heading { page-break-after: avoid; font-size:9pt; margin:12px 0 6px 0; }
+  tr { page-break-inside: avoid; }
+  .proj-table { page-break-inside: avoid; }
+  p { orphans: 3; widows: 3; margin-bottom:5px; font-size:9pt; }
+  .content-block { display:block !important; }
+  .main-col { width:100% !important; flex:none !important; }
+  .editable { border:none !important; background:transparent !important; }
+  .toc-page { padding:4mm 2mm !important; }
+  .toc-header { font-size:10pt; padding:6px 12px; }
+  .toc-row { font-size:9pt; padding:5px 0; }
+  .risk-high { color:#c0392b !important; -webkit-print-color-adjust:exact; }
+  .risk-mid { color:#e67e22 !important; -webkit-print-color-adjust:exact; }
+  .sum-row td { background:#f0f0f0 !important; -webkit-print-color-adjust:exact; }
+  tr:nth-child(even) td { background:#f7f7f7 !important; -webkit-print-color-adjust:exact; }
+}
+
+body { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 8.5pt; color: #1a1a1a; background: #e8e8e8; line-height: 1.45; }
+.doc-wrapper { display:flex; min-height:100vh; }
+#file-sidebar { width: 260px; min-width:260px; background: #111; color: #bbb; font-size: 7.5pt; padding: 16px 12px; overflow-y: auto; transition: width .3s; }
+#file-sidebar h3 { color: #fff; margin-bottom:8px; font-size:8pt; letter-spacing:.5px; }
+#file-sidebar ul { padding-left:14px; line-height:1.9; }
+#file-sidebar li { word-break:break-all; }
+#file-sidebar.collapsed { width:0; min-width:0; padding:0; overflow:hidden; }
+.doc-main { flex:1; padding:20px; display:flex; flex-direction:column; align-items:center; }
+.toolbar { position:sticky; top:0; z-index:100; background: #1a1a1a; color:#fff; display:flex; align-items:center; gap:8px; padding:8px 14px; width:100%; max-width:920px; border-radius:3px; margin-bottom:12px; box-shadow: 0 2px 10px rgba(0,0,0,.4); }
+.toolbar span.info { font-size:7.5pt; opacity:.6; flex:1; }
+.sidebar-toggle { cursor:pointer; font-size:13pt; padding:0 4px; }
+.tb-btn { background:rgba(255,255,255,.12); border:1px solid rgba(255,255,255,.25); color:#fff; font-size:7.5pt; padding:5px 12px; border-radius:3px; cursor:pointer; white-space:nowrap; transition: background .2s; }
+.tb-btn:hover { background:rgba(255,255,255,.25); }
+.tb-btn.active { background:#fff; color:#1a1a1a; font-weight:700; }
+.tb-btn.pdf { background:#222; border-color:#555; }
+.tb-btn.pdf:hover { background:#444; }
+.tb-btn.save { background:#333; border-color:#666; }
+.tb-btn.save:hover { background:#555; }
+.a4-sheet { background:#fff; width:920px; max-width:100%; box-shadow: 0 4px 24px rgba(0,0,0,.2); border-radius:2px; overflow:hidden; }
+
+/* TITELSEITE */
+.title-page { position:relative; min-height:580px; padding:0; display:flex; flex-direction:column; justify-content:flex-end; background:#fff; page-break-after: always; }
+.title-bg { position:absolute; inset:0; background:#fff; display:flex; align-items:center; justify-content:center; overflow:hidden; }
+.title-bg img { width:100%; height:100%; object-fit:cover; opacity:.18; }
+.title-content { position:relative; z-index:2; border-top: 3px solid #1a1a1a; padding: 8px 14mm 10mm 14mm; margin: 0 14mm; }
+.title-meta { position:absolute; bottom:10mm; right:14mm; z-index:2; text-align:right; font-size:7.5pt; color:#333; }
+.title-meta strong { font-size:9pt; display:block; }
+.lph-bar { display:flex; gap:5px; margin-top:8px; }
+.lph-pip { background:#1a1a1a; color:#fff; font-size:6.5pt; padding:2px 6px; opacity:.25; }
+.lph-pip.active { opacity:1; font-weight:700; }
+.proj-title { font-size:16pt; font-weight:700; color:#1a1a1a; margin-bottom:3px; }
+.proj-sub { font-size:9pt; color:#444; }
+
+/* TOC */
+.toc-page { padding: 22mm; page-break-after: always; border-bottom: 1px solid #eee; }
+.toc-header { background:#1a1a1a; color:#fff; padding:5px 10px; font-weight:700; font-size:9pt; letter-spacing:.5px; margin-bottom:16px; }
+.toc-row { display:flex; align-items:baseline; padding:4px 0; border-bottom:1px dotted #ddd; font-size:8.5pt; text-decoration:none; color:#1a1a1a; }
+.toc-row:hover { background:#f9f9f9; }
+.toc-num { min-width:40px; font-weight:700; color:#555; }
+.toc-title { flex:1; }
+.toc-sub { padding:2px 0 2px 40px; font-size:7.8pt; color:#666; display:flex; }
+.toc-sub .toc-num { color:#999; font-weight:400; }
+.toc-dots { flex:1; border-bottom:1px dotted #ccc; margin:0 8px 3px 8px; }
+.toc-page-num { font-size:7.5pt; color:#555; min-width:20px; text-align:right; }
+.toc-section { margin-top:10px; }
+.toc-section-label { font-size:7pt; color:#999; letter-spacing:1px; text-transform:uppercase; margin-bottom:4px; padding-top:6px; border-top:1px solid #eee; }
+
+/* KAPITEL */
+.chapter-page { padding:18mm 22mm; }
+.chapter-banner { display:flex; align-items:stretch; margin:0 0 10px 0; page-break-after:avoid; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+.ch-label, .ch-num, .ch-title { background:#1a1a1a !important; color:#fff !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+.ch-label { font-weight:700; font-size:8pt; padding:4px 8px; min-width:110px; letter-spacing:.3px; }
+.ch-num { font-weight:700; font-size:8pt; padding:4px 8px; min-width:36px; border-left:1px solid #fff; border-right:1px solid #fff; }
+.ch-title { padding:4px 10px; flex:1; font-weight:600; font-size:8pt; }
+.content-block { display:flex; gap:16px; margin-bottom:12px; }
+.main-col { flex:3; }
+.side-col { flex:1; border-left:2px solid #1a1a1a; padding-left:10px; font-size:7.5pt; color:#444; }
+.side-col strong { color:#1a1a1a; display:block; margin-bottom:4px; font-size:7.5pt; letter-spacing:.3px; }
+.source-block { font-size:7pt; color:#444; margin-top:10px; padding-top:6px; border-top:1px dashed #999; line-height:1.5; }
+.source-block strong { display:block; margin-bottom:3px; color:#1a1a1a; letter-spacing:.3px; font-size:7.5pt; }
+.sec-heading { font-weight:700; font-size:8.5pt; border-bottom:1px solid #ccc; padding-bottom:3px; margin:10px 0 5px 0; }
+.sec-num { color:#777; margin-right:6px; }
+p { margin-bottom:6px; }
+
+/* TABLES */
+table { width:100%; border-collapse:collapse; font-size:7.8pt; margin:8px 0 12px 0; }
+th { background:#1a1a1a; color:#fff; padding:4px 6px; text-align:left; font-weight:600; }
+td { padding:4px 6px; border-bottom:1px solid #e0e0e0; vertical-align:top; }
+tr:nth-child(even) td { background:#f7f7f7; }
+/* Alte Fallback-Farben fuer td/span-Text (wird nur noch genutzt wenn kein .risk-tag vorhanden) */
+td.risk-high, span.risk-text-high { color:#c0392b; font-weight:700; }
+td.risk-mid, span.risk-text-mid { color:#e67e22; font-weight:600; }
+td.risk-low, span.risk-text-low { color:#444; }
+
+/* Status-Badges: nur der Statusbegriff wird farbig, nicht die ganze Zelle */
+.risk-tag { display:inline-block; padding:1px 9px; border-radius:10px; font-size:7pt; font-weight:700; color:#fff; letter-spacing:.3px; line-height:1.5; text-transform:lowercase; cursor:default; white-space:nowrap; vertical-align:baseline; }
+.risk-tag.risk-high { background:#c0392b; color:#fff; }
+.risk-tag.risk-mid { background:#e67e22; color:#fff; }
+.risk-tag.risk-low { background:#7f8c8d; color:#fff; }
+.risk-tag.risk-none { background:#e5e5e5; color:#333; }
+.editable-mode .risk-tag { cursor:pointer; outline:1px dashed transparent; }
+.editable-mode .risk-tag:hover { outline-color:#1a1a1a; }
+
+/* Farbwahl-Popup fuer Status-Tags */
+#risk-menu { position:fixed; background:#fff; border:1px solid #1a1a1a; box-shadow:0 4px 14px rgba(0,0,0,.25); padding:6px; z-index:10000; border-radius:4px; font-family:inherit; min-width:160px; }
+#risk-menu .rm-title { font-size:7pt; color:#666; padding:2px 4px 6px 4px; border-bottom:1px solid #eee; margin-bottom:4px; letter-spacing:.5px; text-transform:uppercase; }
+#risk-menu .rm-opt { display:flex; align-items:center; gap:8px; background:none; border:1px solid transparent; padding:4px 8px; cursor:pointer; font-size:8pt; color:#222; font-family:inherit; border-radius:2px; width:100%; text-align:left; }
+#risk-menu .rm-opt:hover { background:#f0f0f0; border-color:#ccc; }
+#risk-menu .rm-swatch { width:16px; height:16px; border-radius:8px; flex-shrink:0; border:1px solid rgba(0,0,0,.15); }
+#risk-menu .rm-text { flex:1; }
+#risk-menu .rm-active { background:#eef; border-color:#1a1a1a; font-weight:700; }
+#risk-menu .rm-text-row { display:flex; gap:4px; margin-top:6px; border-top:1px solid #eee; padding-top:6px; }
+#risk-menu .rm-text-row input { flex:1; font-size:8pt; padding:3px 6px; border:1px solid #ccc; border-radius:2px; font-family:inherit; }
+#risk-menu .rm-text-row button { font-size:7.5pt; padding:3px 8px; border:1px solid #1a1a1a; background:#1a1a1a; color:#fff; cursor:pointer; border-radius:2px; font-family:inherit; }
+@media print { #risk-menu { display:none !important; } }
+.proj-table td:first-child { font-weight:600; color:#333; width:170px; }
+.sum-row td { font-weight:700; border-top:2px solid #1a1a1a; background:#f0f0f0 !important; }
+
+/* EDITABLE */
+.editable-mode .editable { outline:none; border-bottom:1px dashed #888; background:rgba(0,0,0,.03); cursor:text; min-height:1.2em; transition:background .15s; }
+.editable-mode .editable:focus { background:rgba(0,0,0,.06); border-bottom:1.5px solid #1a1a1a; }
+.editable-mode td[contenteditable="true"]:focus, .editable-mode th[contenteditable="true"]:focus { background:rgba(26,26,26,.08); outline:1px solid #1a1a1a; }
+.edit-hint { display:none; font-size:7pt; color:#888; text-align:right; margin-bottom:6px; font-style:italic; }
+.editable-mode .edit-hint { display:block; }
+.add-row-btn { display:none; font-size:7pt; color:#333; border:1px dashed #888; background:none; cursor:pointer; padding:2px 8px; border-radius:2px; margin-top:4px; }
+.editable-mode .add-row-btn { display:inline-block; }
+.add-row-btn:hover { background:rgba(0,0,0,.06); }
+
+/* UNIVERSELLE EDIT-TOOLS (nur im Edit-Modus sichtbar) */
+.edit-tool { display:none !important; }
+.editable-mode .edit-tool { display:inline-flex !important; }
+.editable-mode table tr:hover .row-del-btn { opacity:1; }
+.row-del-btn { position:absolute; left:-22px; top:50%; transform:translateY(-50%); width:18px; height:18px; border:none; background:#c0392b; color:#fff; border-radius:50%; font-size:11pt; line-height:16px; cursor:pointer; padding:0; opacity:.5; transition:opacity .15s, background .15s; align-items:center; justify-content:center; z-index:10; font-weight:700; }
+.row-del-btn:hover { background:#e74c3c; opacity:1; }
+.table-tools { display:none; gap:6px; margin:-6px 0 14px 0; flex-wrap:wrap; }
+.editable-mode .table-tools { display:flex; }
+.tb-edit-btn { font-size:7pt; padding:3px 10px; border:1px dashed #888; background:#fff; cursor:pointer; border-radius:2px; color:#333; font-family:inherit; }
+.tb-edit-btn:hover { background:#f0f0f0; border-color:#333; }
+.tb-edit-btn.tb-del { color:#c0392b; border-color:#c0392b; border-style:solid; }
+.tb-edit-btn.tb-del:hover { background:#fdeeec; }
+.tb-edit-btn.tb-add { color:#1a1a1a; border-style:solid; }
+.block-del-btn { position:absolute; right:4px; top:4px; width:20px; height:20px; border:none; background:#c0392b; color:#fff; border-radius:2px; font-size:11pt; line-height:18px; cursor:pointer; padding:0; align-items:center; justify-content:center; z-index:10; font-weight:700; }
+.block-del-btn:hover { background:#e74c3c; }
+.sec-heading { position:relative; }
+.goal-card { position:relative; }
+.chapter-page { position:relative; }
+.editable-mode .chapter-page > .block-del-btn { top:8px; right:8px; }
+.editable-mode ul li { outline:none; }
+.editable-mode ul li:focus { background:rgba(0,0,0,.05); }
+.title-bg { cursor: default; }
+.editable-mode .title-bg { cursor: pointer; outline: 2px dashed transparent; }
+.editable-mode .title-bg:hover { outline: 2px dashed #1a1a1a; }
+.editable-mode .title-bg::after { content: 'Klicken zum Titelbild &auml;ndern'; display:block; position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); background:rgba(26,26,26,.85); color:#fff; padding:8px 16px; font-size:9pt; border-radius:3px; z-index:5; pointer-events:none; }
+.editable-mode .title-bg:not(:hover)::after { display:none; }
+.tb-btn.upload { background:#222; border-color:#555; }
+.tb-btn.upload:hover { background:#444; }
+@media print {
+  .edit-tool, .table-tools, .row-del-btn, .block-del-btn { display:none !important; }
+  .title-bg::after { display:none !important; }
+}
+#toast { position:fixed; bottom:24px; right:24px; background:#1a1a1a; color:#fff; padding:10px 18px; border-radius:3px; font-size:8.5pt; font-weight:600; opacity:0; transition:opacity .3s; pointer-events:none; z-index:999; }
+#toast.show { opacity:1; }
+.page-break { page-break-before:always; }
+
+/* ZIELKARTEN */
+.goal-grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; margin:8px 0 14px 0; }
+.goal-card { border:1.5px solid #1a1a1a; }
+/* Druckfest: schwarzer Text auf hellem Hintergrund + linker Akzentstreifen + Border-bottom
+   funktioniert auch ohne -webkit-print-color-adjust und ohne aktivierte "Hintergrund drucken"-Option */
+.goal-card-header { color:#1a1a1a; background:#fff; padding:5px 10px 5px 12px; font-weight:700; font-size:8.5pt; letter-spacing:.3px; border-bottom:2px solid #1a1a1a; border-left:5px solid #1a1a1a; }
+.goal-card-body { padding:8px 10px; font-size:8pt; line-height:1.5; }
+.gc-dark { background:#fafafa; border-left-color:#1a1a1a; }
+.gc-mid  { background:#f5f5f5; border-left-color:#555; }
+.gc-light { background:#f0f0f0; border-left-color:#888; }
+
+</style>
+</head>
+<body>
+
+<div id="toast">Gespeichert</div>
+
+<div class="doc-wrapper">
+
+<!-- SIDEBAR -->
+<div id="file-sidebar">
+  <h3>Gelesene Dateien</h3>
+  <ul id="file-list">
+    <!-- {{DATEILISTE}} -->
+    <li>Wird automatisch befuellt...</li>
+  </ul>
+</div>
+
+<div class="doc-main">
+
+<!-- TOOLBAR -->
+<div class="toolbar">
+  <span class="sidebar-toggle" onclick="toggleSidebar()">&#9776;</span>
+  <span class="info">LPH 3 Entwurfsplanung &mdash; {{PROJEKT_NR}} &mdash; Gutthann HIW Architekten</span>
+  <button class="tb-btn" id="btn-edit" onclick="toggleEdit()">Bearbeiten</button>
+  <button class="tb-btn upload" onclick="uploadTitleImage()">Titelbild &auml;ndern</button>
+  <button class="tb-btn save" onclick="saveDoc()">Speichern</button>
+  <input type="file" id="title-img-input" accept="image/*" style="display:none;" onchange="handleTitleImage(event)">
+  <button class="tb-btn pdf" onclick="printAsPDF()">Als PDF speichern</button>
+</div>
+
+<div class="a4-sheet" id="doc">
+<div class="edit-hint">Klicke auf beliebigen Text zum Bearbeiten</div>
+
+<!-- ================================================================ -->
+<!-- TITELSEITE                                                        -->
+<!-- ================================================================ -->
+<div class="title-page">
+  <div class="title-bg">
+    <img src="{{TITELBILD_PFAD}}" alt="Projektbild">
+  </div>
+
+  <div class="title-content">
+    <div class="proj-title editable" contenteditable="false">{{PROJEKT_TITEL}}</div>
+    <div class="proj-sub editable" contenteditable="false">{{PROJEKT_ORT}} &mdash; Projektnummer {{PROJEKT_NR}}</div>
+    <div class="lph-bar">
+      <span class="lph-pip">LPH 1</span>
+      <span class="lph-pip">LPH 2</span>
+      <span class="lph-pip active">LPH 3</span>
+      <span class="lph-pip">LPH 4</span>
+      <span class="lph-pip">LPH 5</span>
+      <span class="lph-pip">LPH 6</span>
+      <span class="lph-pip">LPH 7</span>
+      <span class="lph-pip">LPH 8</span>
+      <span class="lph-pip">LPH 9</span>
+    </div>
+  </div>
+
+  <div class="title-meta">
+    <strong>ENTWURFSPLANUNG</strong>
+    Leistungsbild &sect; 33 HOAI<br>
+    Geb&auml;ude und Innenr&auml;ume<br>
+    Stand: <span class="editable" contenteditable="false">{{DATUM}}</span>
+  </div>
+</div>
+
+<!-- ================================================================ -->
+<!-- INHALTSVERZEICHNIS                                                -->
+<!-- ================================================================ -->
+<div class="toc-page page-break" id="toc">
+  <div class="toc-header">ENTWURFSPLANUNG &mdash; INHALTSVERZEICHNIS</div>
+  <div class="toc-section">
+    <div class="toc-section-label">Hauptkapitel</div>
+    <a class="toc-row" href="#kap31"><span class="toc-num">3.1</span><span class="toc-title">Erarbeiten der Entwurfsplanung</span><span class="toc-dots"></span><span class="toc-page-num"></span></a>
+    <div class="toc-sub"><span class="toc-num">3.1.1</span><span>Allgemeines</span></div>
+    <div class="toc-sub"><span class="toc-num">3.1.2</span><span>St&auml;dtebau / Erschlie&szlig;ung / Architektur</span></div>
+    <div class="toc-sub"><span class="toc-num">3.1.3</span><span>Planungsrechtliche Zul&auml;ssigkeit</span></div>
+    <div class="toc-sub"><span class="toc-num">3.1.4</span><span>Erf&uuml;llung des Raumbedarfs</span></div>
+    <div class="toc-sub"><span class="toc-num">3.1.5</span><span>&Ouml;ffentlich-rechtliche Anforderungen</span></div>
+    <div class="toc-sub"><span class="toc-num">3.1.6</span><span>Erweiterungsm&ouml;glichkeit</span></div>
+    <div class="toc-sub"><span class="toc-num">3.1.7</span><span>Kostensicherheit / -risiko</span></div>
+    <div class="toc-sub"><span class="toc-num">3.1.8</span><span>Barrierefreiheit</span></div>
+    <div class="toc-sub"><span class="toc-num">3.1.9</span><span>Nutzerprofil</span></div>
+    <a class="toc-row" href="#kap32"><span class="toc-num">3.2</span><span class="toc-title">Bereitstellen der Arbeitsergebnisse</span><span class="toc-dots"></span><span class="toc-page-num"></span></a>
+    <a class="toc-row" href="#kap33"><span class="toc-num">3.3</span><span class="toc-title">Objektbeschreibung nach Kostengruppen</span><span class="toc-dots"></span><span class="toc-page-num"></span></a>
+    <div class="toc-sub"><span class="toc-num">3.3.1</span><span>KGR 100 &mdash; Baugrundst&uuml;ck</span></div>
+    <div class="toc-sub"><span class="toc-num">3.3.2</span><span>KGR 200 &mdash; Herrichten und Erschlie&szlig;en</span></div>
+    <div class="toc-sub"><span class="toc-num">3.3.3</span><span>KGR 300 &mdash; Bauwerk &ndash; Baukonstruktion</span></div>
+    <div class="toc-sub"><span class="toc-num">3.3.4</span><span>KGR 400 &mdash; Bauwerk &ndash; Technische Anlagen</span></div>
+    <div class="toc-sub"><span class="toc-num">3.3.5</span><span>KGR 500 &mdash; Au&szlig;enanlagen</span></div>
+    <div class="toc-sub"><span class="toc-num">3.3.6</span><span>KGR 600 &mdash; Ausstattung</span></div>
+    <div class="toc-sub"><span class="toc-num">3.3.7</span><span>KGR 700 &mdash; Baunebenkosten</span></div>
+    <a class="toc-row" href="#kap34"><span class="toc-num">3.4</span><span class="toc-title">Verhandlungen &uuml;ber die Genehmigungsf&auml;higkeit</span><span class="toc-dots"></span><span class="toc-page-num"></span></a>
+    <a class="toc-row" href="#kap35"><span class="toc-num">3.5</span><span class="toc-title">Kostenberechnung nach DIN 276</span><span class="toc-dots"></span><span class="toc-page-num"></span></a>
+    <a class="toc-row" href="#kap36"><span class="toc-num">3.6</span><span class="toc-title">Terminplan</span><span class="toc-dots"></span><span class="toc-page-num"></span></a>
+    <a class="toc-row" href="#kap37"><span class="toc-num">3.7</span><span class="toc-title">Zusammenfassen, Erl&auml;utern und Dokumentieren der Ergebnisse</span><span class="toc-dots"></span><span class="toc-page-num"></span></a>
+    <a class="toc-row" href="#kap38"><span class="toc-num">3.8</span><span class="toc-title">Besondere Leistungen</span><span class="toc-dots"></span><span class="toc-page-num"></span></a>
+  </div>
+</div>
+
+<!-- ================================================================ -->
+<!-- 3.1 ERARBEITEN DER ENTWURFSPLANUNG                                -->
+<!-- ================================================================ -->
+<div class="chapter-page page-break" id="kap31">
+  <div class="chapter-banner"><div class="ch-label">ENTWURFSPLANUNG</div><div class="ch-num">3.1</div><div class="ch-title">Erarbeiten der Entwurfsplanung</div></div>
+  <div class="content-block"><div class="main-col">
+    <div class="sec-heading"><span class="sec-num">3.1.1</span>Allgemeines</div>
+    <p class="editable" contenteditable="false">{{3_1_1_ALLGEMEINES}}</p>
+  </div><div class="side-col"><strong>GRUNDLEISTUNGEN &sect; 33</strong>
+    Erarbeiten der Entwurfsplanung unter weiterer Ber&uuml;cksichtigung der wesentlichen Zusammenh&auml;nge, Vorgaben und Bedingungen
+  </div></div>
+</div>
+
+<!-- 3.1.2 STAEDTEBAU -->
+<div class="chapter-page page-break">
+  <div class="chapter-banner"><div class="ch-label">ENTWURFSPLANUNG</div><div class="ch-num">3.1</div><div class="ch-title">Erarbeiten der Entwurfsplanung</div></div>
+  <div class="content-block"><div class="main-col">
+    <div class="sec-heading"><span class="sec-num">3.1.2</span>St&auml;dtebau / Erschlie&szlig;ung / Architektur</div>
+    <p class="editable" contenteditable="false">{{3_1_2_STAEDTEBAU}}</p>
+  </div><div class="side-col"><strong>CHECKLISTE</strong>
+    &#9744; St&auml;dtebauliche Einordnung<br>
+    &#9744; Erschlie&szlig;ungskonzept<br>
+    &#9744; Architekturkonzept<br>
+    &#9744; Konstruktion<br>
+    &#9744; Brandschutz<br>
+    &#9744; Barrierefreiheit
+  </div></div>
+</div>
+
+<!-- 3.1.3 PLANUNGSRECHT -->
+<div class="chapter-page page-break">
+  <div class="chapter-banner"><div class="ch-label">ENTWURFSPLANUNG</div><div class="ch-num">3.1</div><div class="ch-title">Erarbeiten der Entwurfsplanung</div></div>
+  <div class="content-block"><div class="main-col">
+    <div class="sec-heading"><span class="sec-num">3.1.3</span>Planungsrechtliche Zul&auml;ssigkeit</div>
+    <p class="editable" contenteditable="false">{{3_1_3_PLANUNGSRECHT}}</p>
+  </div><div class="side-col"><strong>CHECKLISTE</strong>
+    &#9744; Bebauungsplan<br>
+    &#9744; Befreiungen<br>
+    &#9744; Abstandsfl&auml;chen
+  </div></div>
+</div>
+
+<!-- 3.1.4 RAUMBEDARF -->
+<div class="chapter-page page-break">
+  <div class="chapter-banner"><div class="ch-label">ENTWURFSPLANUNG</div><div class="ch-num">3.1</div><div class="ch-title">Erarbeiten der Entwurfsplanung</div></div>
+  <div class="content-block"><div class="main-col">
+    <div class="sec-heading"><span class="sec-num">3.1.4</span>Erf&uuml;llung des Raumbedarfs</div>
+    <p class="editable" contenteditable="false">{{3_1_4_RAUMBEDARF}}</p>
+  </div><div class="side-col"><strong>ANLAGE</strong>
+    Raumprogramm als Anlage
+  </div></div>
+</div>
+
+<!-- 3.1.5 OEFFENTLICH-RECHTLICH -->
+<div class="chapter-page page-break">
+  <div class="chapter-banner"><div class="ch-label">ENTWURFSPLANUNG</div><div class="ch-num">3.1</div><div class="ch-title">Erarbeiten der Entwurfsplanung</div></div>
+  <div class="content-block"><div class="main-col">
+    <div class="sec-heading"><span class="sec-num">3.1.5</span>&Ouml;ffentlich-rechtliche Anforderungen</div>
+    <p class="editable" contenteditable="false">{{3_1_5_OEFFENTL_RECHT}}</p>
+  </div><div class="side-col"><strong>CHECKLISTE</strong>
+    &#9744; Barrierefreiheit<br>
+    &#9744; GEG<br>
+    &#9744; Brandschutz<br>
+    &#9744; B-Plan
+  </div></div>
+</div>
+
+<!-- 3.1.6 ERWEITERUNG -->
+<div class="chapter-page page-break">
+  <div class="chapter-banner"><div class="ch-label">ENTWURFSPLANUNG</div><div class="ch-num">3.1</div><div class="ch-title">Erarbeiten der Entwurfsplanung</div></div>
+  <div class="content-block"><div class="main-col">
+    <div class="sec-heading"><span class="sec-num">3.1.6</span>Erweiterungsm&ouml;glichkeit</div>
+    <p class="editable" contenteditable="false">{{3_1_6_ERWEITERUNG}}</p>
+  </div></div>
+</div>
+
+<!-- 3.1.7 KOSTENSICHERHEIT -->
+<div class="chapter-page page-break">
+  <div class="chapter-banner"><div class="ch-label">ENTWURFSPLANUNG</div><div class="ch-num">3.1</div><div class="ch-title">Erarbeiten der Entwurfsplanung</div></div>
+  <div class="content-block"><div class="main-col">
+    <div class="sec-heading"><span class="sec-num">3.1.7</span>Kostensicherheit / -risiko</div>
+    <p class="editable" contenteditable="false">{{3_1_7_KOSTENSICHERHEIT}}</p>
+  </div></div>
+</div>
+
+<!-- 3.1.8 BARRIEREFREIHEIT -->
+<div class="chapter-page page-break">
+  <div class="chapter-banner"><div class="ch-label">ENTWURFSPLANUNG</div><div class="ch-num">3.1</div><div class="ch-title">Erarbeiten der Entwurfsplanung</div></div>
+  <div class="content-block"><div class="main-col">
+    <div class="sec-heading"><span class="sec-num">3.1.8</span>Barrierefreiheit</div>
+    <p class="editable" contenteditable="false">{{3_1_8_BARRIEREFREIHEIT}}</p>
+  </div></div>
+</div>
+
+<!-- 3.1.9 NUTZERPROFIL -->
+<div class="chapter-page page-break">
+  <div class="chapter-banner"><div class="ch-label">ENTWURFSPLANUNG</div><div class="ch-num">3.1</div><div class="ch-title">Erarbeiten der Entwurfsplanung</div></div>
+  <div class="content-block"><div class="main-col">
+    <div class="sec-heading"><span class="sec-num">3.1.9</span>Nutzerprofil</div>
+    <p class="editable" contenteditable="false">{{3_1_9_NUTZERPROFIL}}</p>
+    <!-- {{3_1_BETEILIGTE_TABELLE}} -->
+  </div></div>
+</div>
+
+<!-- ================================================================ -->
+<!-- 3.2 BEREITSTELLEN DER ARBEITSERGEBNISSE                           -->
+<!-- ================================================================ -->
+<div class="chapter-page page-break" id="kap32">
+  <div class="chapter-banner"><div class="ch-label">ENTWURFSPLANUNG</div><div class="ch-num">3.2</div><div class="ch-title">Bereitstellen der Arbeitsergebnisse</div></div>
+  <div class="content-block"><div class="main-col">
+    <p class="editable" contenteditable="false">{{3_2_ARBEITSERGEBNISSE}}</p>
+    <!-- {{3_2_PLANVERZEICHNIS_TABELLE}} -->
+  </div><div class="side-col"><strong>ANLAGEN</strong>
+    Planverzeichnis, Fachplaner-Berichte
+  </div></div>
+</div>
+
+<!-- ================================================================ -->
+<!-- 3.3 OBJEKTBESCHREIBUNG NACH KOSTENGRUPPEN                         -->
+<!-- ================================================================ -->
+
+<!-- KGR 100 -->
+<div class="chapter-page page-break" id="kap33">
+  <div class="chapter-banner"><div class="ch-label">ENTWURFSPLANUNG</div><div class="ch-num">3.3</div><div class="ch-title">Objektbeschreibung</div></div>
+  <div class="content-block"><div class="main-col">
+    <div class="kgr-header">KGR 100 Baugrundst&uuml;ck</div>
+    <div class="editable" contenteditable="false">{{3_3_KGR100}}</div>
+  </div></div>
+</div>
+
+<!-- KGR 200 -->
+<div class="chapter-page page-break">
+  <div class="chapter-banner"><div class="ch-label">ENTWURFSPLANUNG</div><div class="ch-num">3.3</div><div class="ch-title">Objektbeschreibung</div></div>
+  <div class="content-block"><div class="main-col">
+    <div class="kgr-header">KGR 200 Herrichten und Erschlie&szlig;en</div>
+    <div class="editable" contenteditable="false">{{3_3_KGR200}}</div>
+  </div></div>
+</div>
+
+<!-- KGR 300 -->
+<div class="chapter-page page-break">
+  <div class="chapter-banner"><div class="ch-label">ENTWURFSPLANUNG</div><div class="ch-num">3.3</div><div class="ch-title">Objektbeschreibung</div></div>
+  <div class="content-block"><div class="main-col">
+    <div class="kgr-header">KGR 300 Bauwerk &ndash; Baukonstruktion</div>
+    <div class="editable" contenteditable="false">{{3_3_KGR300}}</div>
+  </div></div>
+</div>
+
+<!-- KGR 400/500/600 -->
+<div class="chapter-page page-break">
+  <div class="chapter-banner"><div class="ch-label">ENTWURFSPLANUNG</div><div class="ch-num">3.3</div><div class="ch-title">Objektbeschreibung</div></div>
+  <div class="content-block"><div class="main-col">
+    <div class="kgr-header">KGR 400 Bauwerk &ndash; Technische Anlagen</div>
+    <div class="editable" contenteditable="false">{{3_3_KGR400}}</div>
+    <div class="kgr-header">KGR 500 &ndash; Au&szlig;enanlagen</div>
+    <div class="editable" contenteditable="false">{{3_3_KGR500}}</div>
+    <div class="kgr-header">KGR 600 &ndash; Ausstattung</div>
+    <div class="editable" contenteditable="false">{{3_3_KGR600}}</div>
+  </div></div>
+</div>
+
+<!-- KGR 700 -->
+<div class="chapter-page page-break">
+  <div class="chapter-banner"><div class="ch-label">ENTWURFSPLANUNG</div><div class="ch-num">3.3</div><div class="ch-title">Objektbeschreibung</div></div>
+  <div class="content-block"><div class="main-col">
+    <div class="kgr-header">KGR 700 Baunebenkosten</div>
+    <div class="editable" contenteditable="false">{{3_3_KGR700}}</div>
+  </div></div>
+</div>
+
+<!-- ================================================================ -->
+<!-- 3.4 VERHANDLUNGEN GENEHMIGUNGSFAEHIGKEIT                          -->
+<!-- ================================================================ -->
+<div class="chapter-page page-break" id="kap34">
+  <div class="chapter-banner"><div class="ch-label">ENTWURFSPLANUNG</div><div class="ch-num">3.4</div><div class="ch-title">Verhandlungen &uuml;ber die Genehmigungsf&auml;higkeit</div></div>
+  <div class="content-block"><div class="main-col">
+    <p class="editable" contenteditable="false">{{3_4_GENEHMIGUNG}}</p>
+  </div></div>
+</div>
+
+<!-- ================================================================ -->
+<!-- 3.5 KOSTENBERECHNUNG                                              -->
+<!-- ================================================================ -->
+<div class="chapter-page page-break" id="kap35">
+  <div class="chapter-banner"><div class="ch-label">ENTWURFSPLANUNG</div><div class="ch-num">3.5</div><div class="ch-title">Kostenberechnung nach DIN 276 und Vergleich mit Kostensch&auml;tzung</div></div>
+  <div class="content-block"><div class="main-col">
+    <p class="editable" contenteditable="false">{{3_5_KOSTEN_TEXT}}</p>
+    <!-- {{3_5_KOSTEN_TABELLE}} -->
+    <div class="sec-heading" style="margin-top:14px;">Vergleich Kostensch&auml;tzung (LPH 2) &ndash; Kostenberechnung (LPH 3)</div>
+    <!-- {{3_5_KOSTEN_VERGLEICH}} -->
+  </div><div class="side-col"><strong>ANLAGE</strong>
+    Kostenberechnung DIN 276 detailliert
+  </div></div>
+</div>
+
+<!-- ================================================================ -->
+<!-- 3.6 TERMINPLAN                                                     -->
+<!-- ================================================================ -->
+<div class="chapter-page page-break" id="kap36">
+  <div class="chapter-banner"><div class="ch-label">ENTWURFSPLANUNG</div><div class="ch-num">3.6</div><div class="ch-title">Terminplan</div></div>
+  <div class="content-block"><div class="main-col">
+    <div class="sec-heading">Fortschreibung Terminplan LPH 4 bis Nutzungsbeginn</div>
+    <p class="editable" contenteditable="false">{{3_6_TERMINPLAN_TEXT}}</p>
+    <!-- {{3_6_TERMINPLAN_TABELLE}} -->
+  </div><div class="side-col"><strong>ANLAGE</strong>
+    Rahmenterminplan
+  </div></div>
+</div>
+
+<!-- ================================================================ -->
+<!-- 3.7 ZUSAMMENFASSUNG                                               -->
+<!-- ================================================================ -->
+<div class="chapter-page page-break" id="kap37">
+  <div class="chapter-banner"><div class="ch-label">ENTWURFSPLANUNG</div><div class="ch-num">3.7</div><div class="ch-title">Zusammenfassen, Erl&auml;utern und Dokumentieren der Ergebnisse</div></div>
+  <div class="content-block"><div class="main-col">
+    <p class="editable" contenteditable="false">{{3_7_ZUSAMMENFASSUNG}}</p>
+  </div></div>
+</div>
+
+<!-- ================================================================ -->
+<!-- 3.8 BESONDERE LEISTUNGEN                                          -->
+<!-- ================================================================ -->
+<div class="chapter-page page-break" id="kap38">
+  <div class="chapter-banner"><div class="ch-label">ENTWURFSPLANUNG</div><div class="ch-num">3.8</div><div class="ch-title">Besondere Leistungen</div></div>
+  <div class="content-block"><div class="main-col">
+    <p class="editable" contenteditable="false">{{3_8_BESONDERE_LEISTUNGEN}}</p>
+  </div></div>
+</div>
+
+<!-- ================================================================ -->
+<!-- ABSCHLUSS / UNTERSCHRIFT                                          -->
+<!-- ================================================================ -->
+<div class="chapter-page page-break">
+  <div class="chapter-banner"><div class="ch-label">ENTWURFSPLANUNG</div><div class="ch-num"></div><div class="ch-title">Abschluss LPH 3 &mdash; Entwurfsplanung</div></div>
+  <div class="content-block"><div class="main-col">
+    <p class="editable" contenteditable="false" style="margin-top:20px;">{{ABSCHLUSS_TEXT}}</p>
+    <div style="margin-top:60px; display:flex; gap:60px;">
+      <div style="flex:1;"><div style="border-top:1px solid #1a1a1a; padding-top:4px; font-size:7.5pt;">Ort, Datum</div></div>
+      <div style="flex:1;"><div style="border-top:1px solid #1a1a1a; padding-top:4px; font-size:7.5pt;">Auftraggeber &mdash; {{AG_NAME}}</div></div>
+    </div>
+    <div style="margin-top:40px; display:flex; gap:60px;">
+      <div style="flex:1;"><div style="border-top:1px solid #1a1a1a; padding-top:4px; font-size:7.5pt;">Ort, Datum</div></div>
+      <div style="flex:1;"><div style="border-top:1px solid #1a1a1a; padding-top:4px; font-size:7.5pt;">Objektplaner &mdash; Gutthann HIW Architekten GmbH</div></div>
+    </div>
+  </div><div class="side-col"><strong>FREIGABE</strong>&#9744; Freigabe AG<br>&#9744; Freigabe Objektplaner<br>&#9744; Freigabe Projektsteuerung</div></div>
+</div>
+
+</div><!-- /a4-sheet -->
+</div><!-- /doc-main -->
+</div><!-- /doc-wrapper -->
+
+<script>
+
+let editMode = false;
+const doc = () => document.getElementById('doc');
+
+function toggleEdit() {
+  editMode = !editMode;
+  doc().classList.toggle('editable-mode', editMode);
+  const btn = document.getElementById('btn-edit');
+  btn.classList.toggle('active', editMode);
+  btn.textContent = editMode ? 'Vorschau' : 'Bearbeiten';
+  applyEditable(editMode);
+  if (editMode) { installEditTools(); } else { removeEditTools(); closeRiskMenu(); }
+  installRiskTagHandlers();
+}
+
+function applyEditable(on) {
+  // Alle Text-Elemente editable schalten
+  const selectors = [
+    '.editable', '.proj-title', '.proj-sub',
+    '#doc p', '#doc td', '#doc th', '#doc li',
+    '#doc .sec-heading', '#doc .ch-title', '#doc .ch-label', '#doc .ch-num',
+    '#doc .goal-card-body', '#doc .goal-card-header',
+    '#doc .toc-header', '#doc .toc-title', '#doc .toc-num',
+    '#doc .title-meta', '#doc .lph-pip'
+  ];
+  document.querySelectorAll(selectors.join(',')).forEach(el => {
+    // Nicht in Buttons / Edit-Tools verschachteln
+    if (el.closest('.edit-tool') || el.classList.contains('edit-tool')) return;
+    el.setAttribute('contenteditable', on ? 'true' : 'false');
+    if (on && !el.classList.contains('editable')) el.classList.add('editable');
+  });
+}
+
+function removeEditTools() {
+  document.querySelectorAll('.edit-tool').forEach(el => el.remove());
+}
+
+function installEditTools() {
+  removeEditTools();
+
+  // 1) Jede Zeile in tbody bekommt einen Delete-Button (schwebend links)
+  document.querySelectorAll('#doc tbody tr').forEach(tr => {
+    const firstCell = tr.querySelector('td, th');
+    if (!firstCell) return;
+    firstCell.style.position = 'relative';
+    const btn = document.createElement('button');
+    btn.className = 'row-del-btn edit-tool';
+    btn.type = 'button';
+    btn.innerHTML = '&times;';
+    btn.title = 'Diese Zeile l\u00f6schen';
+    btn.onmousedown = e => e.preventDefault();
+    btn.onclick = (e) => {
+      e.stopPropagation();
+      if (confirm('Diese Zeile wirklich l\u00f6schen?')) tr.remove();
+    };
+    firstCell.appendChild(btn);
+  });
+
+  // 2) Jede Tabelle bekommt "+ Zeile" und "× Tabelle löschen"
+  document.querySelectorAll('#doc table').forEach(table => {
+    const tools = document.createElement('div');
+    tools.className = 'table-tools edit-tool';
+
+    const addBtn = document.createElement('button');
+    addBtn.className = 'tb-edit-btn tb-add';
+    addBtn.type = 'button';
+    addBtn.textContent = '+ Zeile hinzuf\u00fcgen';
+    addBtn.onclick = (e) => {
+      e.stopPropagation();
+      addRowToTable(table);
+    };
+
+    const delTableBtn = document.createElement('button');
+    delTableBtn.className = 'tb-edit-btn tb-del';
+    delTableBtn.type = 'button';
+    delTableBtn.textContent = '\u00d7 Tabelle l\u00f6schen';
+    delTableBtn.onclick = (e) => {
+      e.stopPropagation();
+      if (confirm('Komplette Tabelle wirklich l\u00f6schen?')) {
+        tools.remove();
+        table.remove();
+      }
+    };
+
+    const addColBtn = document.createElement('button');
+    addColBtn.className = 'tb-edit-btn';
+    addColBtn.type = 'button';
+    addColBtn.textContent = '+ Spalte';
+    addColBtn.onclick = (e) => { e.stopPropagation(); addColumnToTable(table); };
+
+    const delColBtn = document.createElement('button');
+    delColBtn.className = 'tb-edit-btn';
+    delColBtn.type = 'button';
+    delColBtn.textContent = '\u2212 letzte Spalte';
+    delColBtn.onclick = (e) => { e.stopPropagation(); removeLastColumn(table); };
+
+    tools.appendChild(addBtn);
+    tools.appendChild(addColBtn);
+    tools.appendChild(delColBtn);
+    tools.appendChild(delTableBtn);
+    table.parentNode.insertBefore(tools, table.nextSibling);
+  });
+
+  // 3) Abschnittsüberschriften: Löschen-Button → entfernt Heading + Inhalt bis zum nächsten Heading
+  document.querySelectorAll('#doc .sec-heading').forEach(h => {
+    const btn = document.createElement('button');
+    btn.className = 'block-del-btn edit-tool';
+    btn.type = 'button';
+    btn.innerHTML = '&times;';
+    btn.title = 'Abschnitt + zugeh\u00f6rigen Inhalt l\u00f6schen';
+    btn.onmousedown = e => e.preventDefault();
+    btn.onclick = (e) => {
+      e.stopPropagation();
+      if (!confirm('Abschnitt und alle nachfolgenden Inhalte bis zum n\u00e4chsten Abschnitt l\u00f6schen?')) return;
+      let node = h.nextElementSibling;
+      h.remove();
+      while (node && !node.classList.contains('sec-heading') && !node.classList.contains('chapter-banner') && !node.classList.contains('chapter-page')) {
+        const nxt = node.nextElementSibling;
+        // Table-Tools mit entfernen, die zur gelöschten Tabelle gehören
+        if (node.classList.contains('table-tools')) { node.remove(); node = nxt; continue; }
+        node.remove();
+        node = nxt;
+      }
+    };
+    h.appendChild(btn);
+  });
+
+  // 4) Ganze Kapitelseiten löschbar
+  document.querySelectorAll('#doc .chapter-page').forEach(ch => {
+    const btn = document.createElement('button');
+    btn.className = 'block-del-btn edit-tool';
+    btn.type = 'button';
+    btn.innerHTML = '&times;';
+    btn.title = 'Komplettes Kapitel l\u00f6schen';
+    btn.style.background = '#7f1d1d';
+    btn.onmousedown = e => e.preventDefault();
+    btn.onclick = (e) => {
+      e.stopPropagation();
+      if (confirm('Komplettes Kapitel inklusive aller Inhalte l\u00f6schen?')) ch.remove();
+    };
+    ch.appendChild(btn);
+  });
+
+  // 5) Zielkarten (Goal-Cards) einzeln löschbar
+  document.querySelectorAll('#doc .goal-card').forEach(card => {
+    const btn = document.createElement('button');
+    btn.className = 'block-del-btn edit-tool';
+    btn.type = 'button';
+    btn.innerHTML = '&times;';
+    btn.style.width = '16px'; btn.style.height = '16px'; btn.style.fontSize = '9pt'; btn.style.lineHeight = '14px';
+    btn.title = 'Zielkarte l\u00f6schen';
+    btn.onmousedown = e => e.preventDefault();
+    btn.onclick = (e) => {
+      e.stopPropagation();
+      if (confirm('Diese Zielkarte l\u00f6schen?')) card.remove();
+    };
+    card.appendChild(btn);
+  });
+
+  // 6) Sidebar-Liste: Items mit Delete und + Hinzufügen
+  document.querySelectorAll('#file-sidebar ul').forEach(ul => {
+    ul.querySelectorAll('li').forEach(li => {
+      li.setAttribute('contenteditable', 'true');
+      const delBtn = document.createElement('button');
+      delBtn.className = 'edit-tool';
+      delBtn.type = 'button';
+      delBtn.innerHTML = '&times;';
+      delBtn.title = 'Eintrag l\u00f6schen';
+      delBtn.style.cssText = 'background:#c0392b; color:#fff; border:none; border-radius:2px; width:14px; height:14px; font-size:8pt; line-height:12px; padding:0; cursor:pointer; margin-left:4px;';
+      delBtn.onmousedown = e => e.preventDefault();
+      delBtn.onclick = (e) => { e.stopPropagation(); li.remove(); };
+      li.appendChild(delBtn);
+    });
+    const addLi = document.createElement('button');
+    addLi.className = 'edit-tool';
+    addLi.type = 'button';
+    addLi.textContent = '+ Eintrag';
+    addLi.style.cssText = 'background:none; color:#bbb; border:1px dashed #666; padding:2px 8px; font-size:7pt; border-radius:2px; cursor:pointer; margin-top:6px; font-family:inherit;';
+    addLi.onclick = (e) => {
+      e.stopPropagation();
+      const li = document.createElement('li');
+      li.setAttribute('contenteditable', 'true');
+      li.textContent = 'Neuer Eintrag';
+      ul.appendChild(li);
+      installEditTools();
+      li.focus();
+    };
+    ul.parentNode.insertBefore(addLi, ul.nextSibling);
+  });
+}
+
+function addRowToTable(table) {
+  const tbody = table.querySelector('tbody');
+  if (!tbody) return;
+  // Referenzzeile finden — nicht Sum-Row
+  const rows = [...tbody.querySelectorAll('tr')].filter(r => !r.classList.contains('sum-row'));
+  const ref = rows.length ? rows[rows.length - 1] : null;
+  const colCount = (table.querySelector('thead tr') || ref || tbody.querySelector('tr')).children.length;
+  const tr = document.createElement('tr');
+  for (let i = 0; i < colCount; i++) {
+    const td = document.createElement('td');
+    td.setAttribute('contenteditable', 'true');
+    td.classList.add('editable');
+    td.innerHTML = '&nbsp;';
+    tr.appendChild(td);
+  }
+  // Vor Sum-Row einfügen wenn vorhanden
+  const sumRow = tbody.querySelector('tr.sum-row');
+  if (sumRow) tbody.insertBefore(tr, sumRow);
+  else tbody.appendChild(tr);
+  installEditTools();
+  installRiskTagHandlers();
+}
+
+function addColumnToTable(table) {
+  table.querySelectorAll('tr').forEach(tr => {
+    const isHeader = tr.parentNode.tagName.toLowerCase() === 'thead' || tr.querySelector('th');
+    const cell = document.createElement(isHeader ? 'th' : 'td');
+    cell.setAttribute('contenteditable', 'true');
+    cell.classList.add('editable');
+    cell.innerHTML = isHeader ? 'Neue Spalte' : '&nbsp;';
+    tr.appendChild(cell);
+  });
+}
+
+function removeLastColumn(table) {
+  if (!confirm('Letzte Spalte wirklich l\u00f6schen?')) return;
+  table.querySelectorAll('tr').forEach(tr => {
+    if (tr.children.length > 1) tr.removeChild(tr.lastElementChild);
+  });
+}
+
+function installRiskTagHandlers() {
+  document.querySelectorAll('#doc .risk-tag').forEach(tag => {
+    tag.onclick = null;
+    if (editMode) {
+      tag.setAttribute('contenteditable', 'false');
+      tag.title = 'Klicken, um Status und Farbe zu \u00e4ndern';
+      tag.onclick = (e) => {
+        e.stopPropagation();
+        e.preventDefault();
+        showRiskMenu(tag, e.clientX, e.clientY);
+      };
+    } else {
+      tag.removeAttribute('contenteditable');
+      tag.removeAttribute('title');
+      tag.onclick = null;
+    }
+  });
+}
+
+function showRiskMenu(target, x, y) {
+  closeRiskMenu();
+  const menu = document.createElement('div');
+  menu.id = 'risk-menu';
+
+  const title = document.createElement('div');
+  title.className = 'rm-title';
+  title.textContent = 'Status & Farbe \u00e4ndern';
+  menu.appendChild(title);
+
+  const options = [
+    { cls: 'risk-high', lbl: 'hoch',   color: '#c0392b', textColor: '#fff' },
+    { cls: 'risk-mid',  lbl: 'mittel', color: '#e67e22', textColor: '#fff' },
+    { cls: 'risk-low',  lbl: 'gering', color: '#7f8c8d', textColor: '#fff' },
+    { cls: 'risk-none', lbl: 'offen',  color: '#e5e5e5', textColor: '#333' }
+  ];
+
+  options.forEach(opt => {
+    const btn = document.createElement('button');
+    btn.className = 'rm-opt' + (target.classList.contains(opt.cls) ? ' rm-active' : '');
+    btn.type = 'button';
+    const swatch = document.createElement('span');
+    swatch.className = 'rm-swatch';
+    swatch.style.background = opt.color;
+    const txt = document.createElement('span');
+    txt.className = 'rm-text';
+    txt.textContent = opt.lbl;
+    btn.appendChild(swatch);
+    btn.appendChild(txt);
+    btn.onmousedown = (e) => e.preventDefault();
+    btn.onclick = (ev) => {
+      ev.stopPropagation();
+      target.classList.remove('risk-high','risk-mid','risk-low','risk-none');
+      target.classList.add(opt.cls);
+      target.textContent = opt.lbl;
+      if (customInput) customInput.value = opt.lbl;
+      // Visuelle R\u00fcckmeldung: aktiv-Markierung im Men\u00fc aktualisieren
+      menu.querySelectorAll('.rm-opt').forEach(b => b.classList.remove('rm-active'));
+      btn.classList.add('rm-active');
+    };
+    menu.appendChild(btn);
+  });
+
+  // Custom-Text
+  const textRow = document.createElement('div');
+  textRow.className = 'rm-text-row';
+  const customInput = document.createElement('input');
+  customInput.type = 'text';
+  customInput.value = target.textContent.trim();
+  customInput.placeholder = 'Eigener Text...';
+  const okBtn = document.createElement('button');
+  okBtn.type = 'button';
+  okBtn.textContent = 'OK';
+  const applyText = () => { if (customInput.value.trim()) target.textContent = customInput.value.trim(); closeRiskMenu(); };
+  okBtn.onmousedown = (e) => e.preventDefault();
+  okBtn.onclick = (e) => { e.stopPropagation(); applyText(); };
+  customInput.onkeydown = (e) => { if (e.key === 'Enter') { e.preventDefault(); applyText(); } };
+  textRow.appendChild(customInput);
+  textRow.appendChild(okBtn);
+  menu.appendChild(textRow);
+
+  // Entfernen-Option: Status-Tag komplett in normalen Text umwandeln
+  const removeBtn = document.createElement('button');
+  removeBtn.type = 'button';
+  removeBtn.className = 'rm-opt';
+  removeBtn.style.marginTop = '6px';
+  removeBtn.style.borderTop = '1px solid #eee';
+  removeBtn.style.color = '#c0392b';
+  removeBtn.innerHTML = '<span class="rm-swatch" style="background:transparent; border:1px dashed #c0392b;"></span><span class="rm-text">Status-Tag entfernen</span>';
+  removeBtn.onmousedown = (e) => e.preventDefault();
+  removeBtn.onclick = (e) => {
+    e.stopPropagation();
+    const textNode = document.createTextNode(target.textContent);
+    target.parentNode.replaceChild(textNode, target);
+    closeRiskMenu();
+  };
+  menu.appendChild(removeBtn);
+
+  document.body.appendChild(menu);
+
+  // Position auf Bildschirm halten
+  const rect = menu.getBoundingClientRect();
+  let left = x + 6;
+  let top = y + 6;
+  if (left + rect.width > window.innerWidth - 10) left = Math.max(10, window.innerWidth - rect.width - 10);
+  if (top + rect.height > window.innerHeight - 10) top = Math.max(10, window.innerHeight - rect.height - 10);
+  menu.style.left = left + 'px';
+  menu.style.top = top + 'px';
+
+  // Außerhalb klicken schließt Menü
+  setTimeout(() => document.addEventListener('mousedown', closeRiskMenuOnOutsideClick, true), 0);
+}
+
+function closeRiskMenuOnOutsideClick(e) {
+  const menu = document.getElementById('risk-menu');
+  if (menu && !menu.contains(e.target)) closeRiskMenu();
+}
+
+function closeRiskMenu() {
+  const existing = document.getElementById('risk-menu');
+  if (existing) existing.remove();
+  document.removeEventListener('mousedown', closeRiskMenuOnOutsideClick, true);
+}
+
+function uploadTitleImage() {
+  document.getElementById('title-img-input').click();
+}
+
+function handleTitleImage(ev) {
+  const file = ev.target.files && ev.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const img = document.querySelector('.title-bg img');
+    if (img) {
+      img.src = e.target.result;
+      img.style.display = '';
+    }
+    showToast('Titelbild aktualisiert');
+  };
+  reader.readAsDataURL(file);
+  ev.target.value = '';
+}
+
+function toggleSidebar() { document.getElementById('file-sidebar').classList.toggle('collapsed'); }
+
+function printAsPDF() {
+  const sb = document.getElementById('file-sidebar');
+  const wasCollapsed = sb.classList.contains('collapsed');
+  sb.classList.add('collapsed');
+  const wasEdit = editMode;
+  if (wasEdit) toggleEdit();
+  setTimeout(() => {
+    window.print();
+    if (!wasCollapsed) sb.classList.remove('collapsed');
+    if (wasEdit) toggleEdit();
+  }, 100);
+}
+
+function saveDoc() {
+  const wasEdit = editMode;
+  closeRiskMenu();
+  if (wasEdit) { removeEditTools(); applyEditable(false); installRiskTagHandlers(); }
+  const html = '<!DOCTYPE html>\n' + document.documentElement.outerHTML;
+  const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'LPH2_Report_bearbeitet.html';
+  a.click();
+  if (wasEdit) { applyEditable(true); installEditTools(); installRiskTagHandlers(); }
+  showToast('Gespeichert');
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(showToast._tid);
+  showToast._tid = setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+  applyEditable(false);
+});
+
+// Tastaturk\u00fcrzel: Strg+E Bearbeiten, Strg+S Speichern, Strg+P PDF
+document.addEventListener('keydown', (e) => {
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'e') { e.preventDefault(); toggleEdit(); }
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') { e.preventDefault(); saveDoc(); }
+});
+
+</script>
+</body>
+</html>

@@ -1,0 +1,22 @@
+# Lokale Test-Outputs - nicht ins Repo committen!
+*_Report.html
+*_Report_bearbeitet*.html
+LPH*_Report*.html
+.dashboard_state.json
+.docs_extract_state.json
+.email_extract*
+.scan_status.json
+.scan.log
+
+# Projekt-Daten (echte Kundendaten!)
+*Beispiel*Regensburg*
+*ausgefuellt*.xlsx
+
+# OS / Editor
+.DS_Store
+Thumbs.db
+desktop.ini
+*.swp
+*~
+.vscode/
+.idea/
