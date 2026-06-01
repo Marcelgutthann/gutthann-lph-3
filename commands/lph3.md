@@ -145,7 +145,7 @@ Analysiere den Fortschritt von LPH 2 zu LPH 3:
 
 | Platzhalter | Beschreibung |
 |---|---|
-| `{{PROJEKT_TITEL}}` | z.B. "GS PFATTER - ERRICHTUNG OGTS" |
+| `{{PROJEKT_TITEL}}` | z.B. "NEUBAU GRUNDSCHULE MIT OGTS" |
 | `{{PROJEKT_NR}}` | z.B. "(Projekt-Nr.)-24" |
 | `{{PROJEKT_ORT}}` | z.B. "{ORTSNAME}" |
 | `{{DATUM}}` | Aktuelles Datum TT.MM.JJJJ |

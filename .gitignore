@@ -9,7 +9,7 @@ LPH*_Report*.html
 .scan.log
 
 # Projekt-Daten (echte Kundendaten!)
-*Beispiel*Regensburg*
+Beispiel_*
 *ausgefuellt*.xlsx
 
 # OS / Editor
