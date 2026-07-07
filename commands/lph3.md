@@ -134,6 +134,8 @@ Analysiere den Fortschritt von LPH 2 zu LPH 3:
 - Max. 5-8 Saetze pro Absatz
 - Beteiligte nur indirekt ("seitens AG", "durch Fachplaner")
 - Objektbeschreibung muss ALLE KGR 100-700 abdecken
+- [ ] Editor komplett? (toggleEdit, installEditTools, addRowToTable, saveDoc, printAsPDF per Grep im Output gefunden; Toolbar-Buttons verweisen darauf)
+- [ ] Seitenzahlen? (updatePagination im Script; Testdruck: ab Seite 2 durchgehend nummeriert) + Bilder als data-URI eingebettet?
 
 ## Design-Regeln
 - Farbe: SCHWARZ `#1a1a1a` — kein Gruen, kein Teal, kein Blau
@@ -174,3 +176,40 @@ Analysiere den Fortschritt von LPH 2 zu LPH 3:
 | `{{3_1_BETEILIGTE_TABELLE}}` | HTML Tabelle fachlich Beteiligte |
 | `{{ABSCHLUSS_TEXT}}` | Abschlusstext LPH 3 |
 | `{{DATEILISTE}}` | `<li>` Elemente fuer Sidebar |
+
+## EINGEBAUTER BEARBEITUNGSMODUS (Stand 07.07.2026, verbindlich - Referenz: 4007 LPH2_Report_REFERENZ_4007.html)
+
+Jeder generierte Bericht MUSS den kompletten 4007-Bearbeitungsmodus enthalten. Er steckt bereits im
+Template (Toolbar + #toast direkt im Body, Editor-CSS im <style>-Block, Editor-JS im <script> am Ende).
+
+PFLICHT beim Generieren:
+1. Template 1:1 als Basis uebernehmen und NUR die {{PLATZHALTER}} ersetzen.
+2. Toolbar, <style>-Block und <script>-Block NIEMALS entfernen, kuerzen oder neu schreiben.
+3. KEINE hardcodierten contenteditable-Attribute in den Inhalt schreiben - applyEditable() im Editor-JS verwaltet das.
+4. IDs/Klassen beibehalten, an denen der Editor haengt: #doc, #file-sidebar, #toast, .toolbar,
+   #title-img-input, .sec-heading, .chapter-page, .goal-card, .risk-tag, .sum-row, .gap-note.
+5. Falls der Editor fehlt oder beschaedigt ist: aus templates/editor_referenz_4007.html wiederherstellen
+   (Abschnitte TOOLBAR / CSS / JS an die markierten Stellen einsetzen).
+
+Funktionsumfang (Abnahmekriterien des Users):
+- Toolbar: Bearbeiten/Vorschau (toggleEdit), Titelbild aendern (uploadTitleImage), Speichern (saveDoc
+  als Download mit dynamischem Dateinamen), PDF speichern (printAsPDF); Shortcuts Strg+E / Strg+S; #toast-Meldungen.
+- Bearbeiten-Modus mit FESTEN Buttons (kein Hover-Verstecken): jede tbody-Zeile hat einen x-Loeschbutton;
+  unter jeder Tabelle dauerhaft "+ Zeile hinzufuegen | + Spalte | - letzte Spalte | x Tabelle loeschen";
+  Abschnitte (.sec-heading), Kapitel (.chapter-page), Zielkarten (.goal-card), Luecken-Bloecke (.gap-note)
+  und Sidebar-Eintraege einzeln loeschbar (mit Sicherheitsabfrage), Sidebar mit "+ Eintrag".
+- Status-/Risiko-Kaestchen (.risk-tag): Klick oeffnet Menue mit Farbauswahl (hoch/mittel/gering/offen),
+  freiem Text und "Status-Tag entfernen".
+
+SEITENZAHLEN (Pflicht): Das Editor-JS enthaelt updatePagination() - automatische Fusszeilen
+"Seite N von M" ab Seite 2 bis zum Ende (Seite 1 = Titelseite ohne Nummer), berechnet aus der realen
+A4-quer-Druckgeometrie, plus automatische Seitenzahlen im Inhaltsverzeichnis (.toc-page-num).
+NIEMALS entfernen; laeuft bei Load, vor jedem Druck und nach Editor-Aenderungen.
+
+BILDER (Pflicht): Alle Bilder werden als data-URI eingebettet, vorher auf max. 1800px verkleinert
+(JPEG ~0.82). NIEMALS relative Links auf Original-Fotos (macht 30+ MB PDFs und bricht beim
+Verschieben). Foto-Slots (.photo-slot) und jedes <img> sind im Bearbeiten-Modus per Klick tauschbar
+(Upload verkleinert automatisch).
+
+WEITERE EDIT-BEREICHE: "+ Absatz" je Abschnitt, "+ Punkt" je Liste, "+ Zielkarte" im Goal-Grid,
+Kapitel duplizieren, Foto-Slots hinzufuegen/loeschen mit editierbarer Bildunterschrift.

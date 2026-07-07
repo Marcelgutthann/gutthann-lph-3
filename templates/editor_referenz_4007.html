@@ -1,0 +1,836 @@
+<!--
+  KANONISCHE EDITOR-REFERENZ (aus 4007: LPH2_Report_REFERENZ_4007.html)
+  Drei Abschnitte zum Einsetzen in LPH-Report-Templates:
+  1. TOOLBAR  -> Toast direkt nach <body>, Toolbar am Anfang von .doc-main
+  2. CSS      -> in den <style>-Block
+  3. JS       -> als <script>
+let editMode = false;
+const doc = () => document.getElementById('doc');
+
+/* ===== Seitenzahlen-Engine: justierbare Konstanten ===== */
+const PAGE_H_MM = 196;      // A4 quer 210mm minus @page-Rand oben 6mm + unten 8mm
+const TOLERANZ = 6;         // px Toleranz bei der Seitenberechnung (gegen Rundungs-Ueberlauf)
+const FOOTER_OFFSET = 16;   // px Abstand der Fusszeile von der berechneten Seitenunterkante
+const MINH_SHAVE = 3;       // px Sicherheitsabzug bei min-height gegen Ueberlauf auf Folgeseite
+const BREAK_EPS = 2;        // px: Bloecke, die eine Seitengrenze nur minimal ueberragen, gelten als passend
+const SHIFT_DAEMPFUNG = 0.53; // empirisch kalibriert (LPH1-Abgleich mit Chrome-Druck): Chrome bricht
+                              // kompakter um als die Voll-Verlust-Annahme der Simulation; Fenster 0.50-0.60
+
+function toggleEdit() {
+  editMode = !editMode;
+  doc().classList.toggle('editable-mode', editMode);
+  const btn = document.getElementById('btn-edit');
+  btn.classList.toggle('active', editMode);
+  btn.textContent = editMode ? 'Vorschau' : 'Bearbeiten';
+  applyEditable(editMode);
+  if (editMode) { installEditTools(); } else { removeEditTools(); closeRiskMenu(); updatePagination(); }
+  installRiskTagHandlers();
+}
+
+function applyEditable(on) {
+  // Alle Text-Elemente editable schalten
+  const selectors = [
+    '.editable', '.proj-title', '.proj-sub',
+    '#doc p', '#doc td', '#doc th', '#doc li',
+    '#doc .sec-heading', '#doc .ch-title', '#doc .ch-label', '#doc .ch-num',
+    '#doc .goal-card-body', '#doc .goal-card-header',
+    '#doc .toc-header', '#doc .toc-title', '#doc .toc-num',
+    '#doc .title-meta', '#doc .lph-pip',
+    '#doc .gap-note', '#doc figcaption'
+  ];
+  document.querySelectorAll(selectors.join(',')).forEach(el => {
+    // Nicht in Buttons / Edit-Tools verschachteln
+    if (el.closest('.edit-tool') || el.classList.contains('edit-tool')) return;
+    el.setAttribute('contenteditable', on ? 'true' : 'false');
+    if (on && !el.classList.contains('editable')) el.classList.add('editable');
+  });
+}
+
+function removeEditTools() {
+  document.querySelectorAll('.edit-tool').forEach(el => el.remove());
+  document.querySelectorAll('#doc img[title="Klicken zum Bild tauschen"]').forEach(img => img.removeAttribute('title'));
+}
+
+function installEditTools() {
+  removeEditTools();
+
+  // 1) Jede Zeile in tbody bekommt einen Delete-Button (schwebend links)
+  document.querySelectorAll('#doc tbody tr').forEach(tr => {
+    const firstCell = tr.querySelector('td, th');
+    if (!firstCell) return;
+    firstCell.style.position = 'relative';
+    const btn = document.createElement('button');
+    btn.className = 'row-del-btn edit-tool';
+    btn.type = 'button';
+    btn.innerHTML = '&times;';
+    btn.title = 'Diese Zeile löschen';
+    btn.onmousedown = e => e.preventDefault();
+    btn.onclick = (e) => {
+      e.stopPropagation();
+      if (confirm('Diese Zeile wirklich löschen?')) tr.remove();
+    };
+    firstCell.appendChild(btn);
+  });
+
+  // 2) Jede Tabelle bekommt "+ Zeile" und "× Tabelle löschen"
+  document.querySelectorAll('#doc table').forEach(table => {
+    const tools = document.createElement('div');
+    tools.className = 'table-tools edit-tool';
+
+    const addBtn = document.createElement('button');
+    addBtn.className = 'tb-edit-btn tb-add';
+    addBtn.type = 'button';
+    addBtn.textContent = '+ Zeile hinzufügen';
+    addBtn.onclick = (e) => {
+      e.stopPropagation();
+      addRowToTable(table);
+    };
+
+    const delTableBtn = document.createElement('button');
+    delTableBtn.className = 'tb-edit-btn tb-del';
+    delTableBtn.type = 'button';
+    delTableBtn.textContent = '× Tabelle löschen';
+    delTableBtn.onclick = (e) => {
+      e.stopPropagation();
+      if (confirm('Komplette Tabelle wirklich löschen?')) {
+        tools.remove();
+        table.remove();
+      }
+    };
+
+    const addColBtn = document.createElement('button');
+    addColBtn.className = 'tb-edit-btn';
+    addColBtn.type = 'button';
+    addColBtn.textContent = '+ Spalte';
+    addColBtn.onclick = (e) => { e.stopPropagation(); addColumnToTable(table); };
+
+    const delColBtn = document.createElement('button');
+    delColBtn.className = 'tb-edit-btn';
+    delColBtn.type = 'button';
+    delColBtn.textContent = '− letzte Spalte';
+    delColBtn.onclick = (e) => { e.stopPropagation(); removeLastColumn(table); };
+
+    tools.appendChild(addBtn);
+    tools.appendChild(addColBtn);
+    tools.appendChild(delColBtn);
+    tools.appendChild(delTableBtn);
+    table.parentNode.insertBefore(tools, table.nextSibling);
+  });
+
+  // 3) Abschnittsüberschriften: Löschen-Button → entfernt Heading + Inhalt bis zum nächsten Heading
+  document.querySelectorAll('#doc .sec-heading').forEach(h => {
+    const btn = document.createElement('button');
+    btn.className = 'block-del-btn edit-tool';
+    btn.type = 'button';
+    btn.innerHTML = '&times;';
+    btn.title = 'Abschnitt + zugehörigen Inhalt löschen';
+    btn.onmousedown = e => e.preventDefault();
+    btn.onclick = (e) => {
+      e.stopPropagation();
+      if (!confirm('Abschnitt und alle nachfolgenden Inhalte bis zum nächsten Abschnitt löschen?')) return;
+      let node = h.nextElementSibling;
+      h.remove();
+      while (node && !node.classList.contains('sec-heading') && !node.classList.contains('chapter-banner') && !node.classList.contains('chapter-page')) {
+        const nxt = node.nextElementSibling;
+        // Table-Tools mit entfernen, die zur gelöschten Tabelle gehören
+        if (node.classList.contains('table-tools')) { node.remove(); node = nxt; continue; }
+        node.remove();
+        node = nxt;
+      }
+    };
+    h.appendChild(btn);
+  });
+
+  // 4) Ganze Kapitelseiten löschbar
+  document.querySelectorAll('#doc .chapter-page').forEach(ch => {
+    const btn = document.createElement('button');
+    btn.className = 'block-del-btn edit-tool';
+    btn.type = 'button';
+    btn.innerHTML = '&times;';
+    btn.title = 'Komplettes Kapitel löschen';
+    btn.style.background = '#7f1d1d';
+    btn.onmousedown = e => e.preventDefault();
+    btn.onclick = (e) => {
+      e.stopPropagation();
+      if (confirm('Komplettes Kapitel inklusive aller Inhalte löschen?')) ch.remove();
+    };
+    ch.appendChild(btn);
+
+    const dupBtn = document.createElement('button');
+    dupBtn.className = 'block-del-btn edit-tool';
+    dupBtn.type = 'button';
+    dupBtn.innerHTML = '&#10697;';
+    dupBtn.title = 'Kapitel duplizieren';
+    dupBtn.style.background = '#1a1a1a';
+    dupBtn.style.right = '34px';
+    dupBtn.onmousedown = e => e.preventDefault();
+    dupBtn.onclick = (e) => {
+      e.stopPropagation();
+      const clone = ch.cloneNode(true);
+      clone.removeAttribute('id');
+      clone.querySelectorAll('[id]').forEach(el => el.removeAttribute('id'));
+      clone.querySelectorAll('.edit-tool').forEach(t => t.remove());
+      clone.querySelectorAll('.page-footer').forEach(t => t.remove());
+      clone.classList.remove('pag-fixed');
+      clone.style.removeProperty('--pag-mh');
+      ch.parentNode.insertBefore(clone, ch.nextSibling);
+      applyEditable(editMode);
+      installEditTools();
+      installRiskTagHandlers();
+      showToast('Kapitel dupliziert');
+    };
+    ch.appendChild(dupBtn);
+  });
+
+  // 5) Zielkarten (Goal-Cards) einzeln löschbar
+  document.querySelectorAll('#doc .goal-card').forEach(card => {
+    const btn = document.createElement('button');
+    btn.className = 'block-del-btn edit-tool';
+    btn.type = 'button';
+    btn.innerHTML = '&times;';
+    btn.style.width = '16px'; btn.style.height = '16px'; btn.style.fontSize = '9pt'; btn.style.lineHeight = '14px';
+    btn.title = 'Zielkarte löschen';
+    btn.onmousedown = e => e.preventDefault();
+    btn.onclick = (e) => {
+      e.stopPropagation();
+      if (confirm('Diese Zielkarte löschen?')) card.remove();
+    };
+    card.appendChild(btn);
+  });
+
+  // 5b) Luecken-Bloecke (gap-note) einzeln löschbar
+  document.querySelectorAll('#doc .gap-note').forEach(gap => {
+    gap.style.position = 'relative';
+    const btn = document.createElement('button');
+    btn.className = 'block-del-btn edit-tool';
+    btn.type = 'button';
+    btn.innerHTML = '&times;';
+    btn.title = 'Lücken-Block löschen';
+    btn.onmousedown = e => e.preventDefault();
+    btn.onclick = (e) => {
+      e.stopPropagation();
+      if (confirm('Diesen Lücken-Block löschen?')) gap.remove();
+    };
+    gap.appendChild(btn);
+  });
+
+  // 6) Sidebar-Liste: Items mit Delete und + Hinzufügen
+  document.querySelectorAll('#file-sidebar ul').forEach(ul => {
+    ul.querySelectorAll('li').forEach(li => {
+      li.setAttribute('contenteditable', 'true');
+      const delBtn = document.createElement('button');
+      delBtn.className = 'edit-tool';
+      delBtn.type = 'button';
+      delBtn.innerHTML = '&times;';
+      delBtn.title = 'Eintrag löschen';
+      delBtn.style.cssText = 'background:#c0392b; color:#fff; border:none; border-radius:2px; width:14px; height:14px; font-size:8pt; line-height:12px; padding:0; cursor:pointer; margin-left:4px;';
+      delBtn.onmousedown = e => e.preventDefault();
+      delBtn.onclick = (e) => { e.stopPropagation(); li.remove(); };
+      li.appendChild(delBtn);
+    });
+    const addLi = document.createElement('button');
+    addLi.className = 'edit-tool';
+    addLi.type = 'button';
+    addLi.textContent = '+ Eintrag';
+    addLi.style.cssText = 'background:none; color:#bbb; border:1px dashed #666; padding:2px 8px; font-size:7pt; border-radius:2px; cursor:pointer; margin-top:6px; font-family:inherit;';
+    addLi.onclick = (e) => {
+      e.stopPropagation();
+      const li = document.createElement('li');
+      li.setAttribute('contenteditable', 'true');
+      li.textContent = 'Neuer Eintrag';
+      ul.appendChild(li);
+      installEditTools();
+      li.focus();
+    };
+    ul.parentNode.insertBefore(addLi, ul.nextSibling);
+  });
+
+  // 7) Bild-Tausch-Hinweis auf allen Bildern
+  document.querySelectorAll('#doc img').forEach(img => { img.title = 'Klicken zum Bild tauschen'; });
+
+  // 8) Foto-Slots: Löschbutton je Slot + "+ Foto" hinter jeder Galerie
+  document.querySelectorAll('#doc .photo-slot').forEach(slotEl => {
+    const btn = document.createElement('button');
+    btn.className = 'block-del-btn edit-tool';
+    btn.type = 'button';
+    btn.innerHTML = '&times;';
+    btn.style.width = '16px'; btn.style.height = '16px'; btn.style.fontSize = '9pt'; btn.style.lineHeight = '14px';
+    btn.title = 'Foto löschen';
+    btn.onmousedown = e => e.preventDefault();
+    btn.onclick = (e) => {
+      e.stopPropagation();
+      if (confirm('Dieses Foto wirklich löschen?')) slotEl.remove();
+    };
+    slotEl.appendChild(btn);
+  });
+  document.querySelectorAll('#doc .photo-gallery').forEach(gal => {
+    const add = document.createElement('button');
+    add.className = 'tb-edit-btn tb-add edit-tool';
+    add.type = 'button';
+    add.textContent = '+ Foto';
+    add.title = 'Leeren Foto-Slot hinzufügen';
+    add.onclick = (e) => {
+      e.stopPropagation();
+      const fig = document.createElement('figure');
+      fig.className = 'photo-slot';
+      const ph = document.createElement('div');
+      ph.className = 'ps-placeholder';
+      ph.textContent = '+ Foto wählen';
+      const cap = document.createElement('figcaption');
+      cap.textContent = 'Bildunterschrift';
+      fig.appendChild(ph);
+      fig.appendChild(cap);
+      gal.appendChild(fig);
+      applyEditable(true);
+      installEditTools();
+    };
+    gal.parentNode.insertBefore(add, gal.nextSibling);
+  });
+
+  // 9) "+ Absatz" unter jeder Abschnittsüberschrift
+  document.querySelectorAll('#doc .sec-heading').forEach(h => {
+    const btn = document.createElement('button');
+    btn.className = 'tb-edit-btn tb-add edit-tool add-par-btn';
+    btn.type = 'button';
+    btn.textContent = '+ Absatz';
+    btn.title = 'Neuen Absatz am Ende dieses Abschnitts einfügen';
+    btn.onmousedown = e => e.preventDefault();
+    btn.onclick = (e) => {
+      e.stopPropagation();
+      let node = h.nextElementSibling;
+      let last = h;
+      while (node && !node.classList.contains('sec-heading') && !node.classList.contains('chapter-banner') && !node.classList.contains('chapter-page') && !node.classList.contains('page-footer')) {
+        last = node;
+        node = node.nextElementSibling;
+      }
+      const p = document.createElement('p');
+      p.setAttribute('contenteditable', 'true');
+      p.classList.add('editable');
+      p.textContent = 'Neuer Absatz';
+      last.parentNode.insertBefore(p, last.nextSibling);
+      p.focus();
+    };
+    h.appendChild(btn);
+  });
+
+  // 10) "+ Punkt" bei jeder Liste
+  document.querySelectorAll('#doc ul, #doc ol').forEach(list => {
+    if (list.closest('.edit-tool')) return;
+    const btn = document.createElement('button');
+    btn.className = 'tb-edit-btn tb-add edit-tool';
+    btn.type = 'button';
+    btn.textContent = '+ Punkt';
+    btn.title = 'Neuen Listenpunkt hinzufügen';
+    btn.onclick = (e) => {
+      e.stopPropagation();
+      const li = document.createElement('li');
+      li.setAttribute('contenteditable', 'true');
+      li.classList.add('editable');
+      li.textContent = 'Neuer Punkt';
+      list.appendChild(li);
+      li.focus();
+    };
+    list.parentNode.insertBefore(btn, list.nextSibling);
+  });
+
+  // 11) "+ Zielkarte" am Ende jedes Goal-Grids
+  document.querySelectorAll('#doc .goal-grid').forEach(grid => {
+    const btn = document.createElement('button');
+    btn.className = 'tb-edit-btn tb-add edit-tool';
+    btn.type = 'button';
+    btn.textContent = '+ Zielkarte';
+    btn.title = 'Neue Zielkarte anhängen';
+    btn.onclick = (e) => {
+      e.stopPropagation();
+      const cards = grid.querySelectorAll('.goal-card');
+      if (!cards.length) return;
+      const clone = cards[cards.length - 1].cloneNode(true);
+      clone.querySelectorAll('.edit-tool').forEach(t => t.remove());
+      const head = clone.querySelector('.goal-card-header');
+      const body = clone.querySelector('.goal-card-body');
+      if (head) head.textContent = 'Neues Ziel';
+      if (body) body.textContent = 'Beschreibung...';
+      grid.appendChild(clone);
+      applyEditable(editMode);
+      installEditTools();
+      installRiskTagHandlers();
+    };
+    grid.parentNode.insertBefore(btn, grid.nextSibling);
+  });
+}
+
+function addRowToTable(table) {
+  const tbody = table.querySelector('tbody');
+  if (!tbody) return;
+  // Referenzzeile finden — nicht Sum-Row
+  const rows = [...tbody.querySelectorAll('tr')].filter(r => !r.classList.contains('sum-row'));
+  const ref = rows.length ? rows[rows.length - 1] : null;
+  const colCount = (table.querySelector('thead tr') || ref || tbody.querySelector('tr')).children.length;
+  const tr = document.createElement('tr');
+  for (let i = 0; i < colCount; i++) {
+    const td = document.createElement('td');
+    td.setAttribute('contenteditable', 'true');
+    td.classList.add('editable');
+    td.innerHTML = '&nbsp;';
+    tr.appendChild(td);
+  }
+  // Vor Sum-Row einfügen wenn vorhanden
+  const sumRow = tbody.querySelector('tr.sum-row');
+  if (sumRow) tbody.insertBefore(tr, sumRow);
+  else tbody.appendChild(tr);
+  installEditTools();
+  installRiskTagHandlers();
+}
+
+function addColumnToTable(table) {
+  table.querySelectorAll('tr').forEach(tr => {
+    const isHeader = tr.parentNode.tagName.toLowerCase() === 'thead' || tr.querySelector('th');
+    const cell = document.createElement(isHeader ? 'th' : 'td');
+    cell.setAttribute('contenteditable', 'true');
+    cell.classList.add('editable');
+    cell.innerHTML = isHeader ? 'Neue Spalte' : '&nbsp;';
+    tr.appendChild(cell);
+  });
+}
+
+function removeLastColumn(table) {
+  if (!confirm('Letzte Spalte wirklich löschen?')) return;
+  table.querySelectorAll('tr').forEach(tr => {
+    if (tr.children.length > 1) tr.removeChild(tr.lastElementChild);
+  });
+}
+
+function installRiskTagHandlers() {
+  document.querySelectorAll('#doc .risk-tag').forEach(tag => {
+    tag.onclick = null;
+    if (editMode) {
+      tag.setAttribute('contenteditable', 'false');
+      tag.title = 'Klicken, um Status und Farbe zu ändern';
+      tag.onclick = (e) => {
+        e.stopPropagation();
+        e.preventDefault();
+        showRiskMenu(tag, e.clientX, e.clientY);
+      };
+    } else {
+      tag.removeAttribute('contenteditable');
+      tag.removeAttribute('title');
+      tag.onclick = null;
+    }
+  });
+}
+
+function showRiskMenu(target, x, y) {
+  closeRiskMenu();
+  const menu = document.createElement('div');
+  menu.id = 'risk-menu';
+
+  const title = document.createElement('div');
+  title.className = 'rm-title';
+  title.textContent = 'Status & Farbe ändern';
+  menu.appendChild(title);
+
+  const options = [
+    { cls: 'risk-high', lbl: 'hoch',   color: '#c0392b', textColor: '#fff' },
+    { cls: 'risk-mid',  lbl: 'mittel', color: '#e67e22', textColor: '#fff' },
+    { cls: 'risk-low',  lbl: 'gering', color: '#7f8c8d', textColor: '#fff' },
+    { cls: 'risk-none', lbl: 'offen',  color: '#e5e5e5', textColor: '#333' }
+  ];
+
+  options.forEach(opt => {
+    const btn = document.createElement('button');
+    btn.className = 'rm-opt' + (target.classList.contains(opt.cls) ? ' rm-active' : '');
+    btn.type = 'button';
+    const swatch = document.createElement('span');
+    swatch.className = 'rm-swatch';
+    swatch.style.background = opt.color;
+    const txt = document.createElement('span');
+    txt.className = 'rm-text';
+    txt.textContent = opt.lbl;
+    btn.appendChild(swatch);
+    btn.appendChild(txt);
+    btn.onmousedown = (e) => e.preventDefault();
+    btn.onclick = (ev) => {
+      ev.stopPropagation();
+      target.classList.remove('risk-high','risk-mid','risk-low','risk-none');
+      target.classList.add(opt.cls);
+      target.textContent = opt.lbl;
+      if (customInput) customInput.value = opt.lbl;
+      // Visuelle Rückmeldung: aktiv-Markierung im Menü aktualisieren
+      menu.querySelectorAll('.rm-opt').forEach(b => b.classList.remove('rm-active'));
+      btn.classList.add('rm-active');
+    };
+    menu.appendChild(btn);
+  });
+
+  // Custom-Text
+  const textRow = document.createElement('div');
+  textRow.className = 'rm-text-row';
+  const customInput = document.createElement('input');
+  customInput.type = 'text';
+  customInput.value = target.textContent.trim();
+  customInput.placeholder = 'Eigener Text...';
+  const okBtn = document.createElement('button');
+  okBtn.type = 'button';
+  okBtn.textContent = 'OK';
+  const applyText = () => { if (customInput.value.trim()) target.textContent = customInput.value.trim(); closeRiskMenu(); };
+  okBtn.onmousedown = (e) => e.preventDefault();
+  okBtn.onclick = (e) => { e.stopPropagation(); applyText(); };
+  customInput.onkeydown = (e) => { if (e.key === 'Enter') { e.preventDefault(); applyText(); } };
+  textRow.appendChild(customInput);
+  textRow.appendChild(okBtn);
+  menu.appendChild(textRow);
+
+  // Entfernen-Option: Status-Tag komplett in normalen Text umwandeln
+  const removeBtn = document.createElement('button');
+  removeBtn.type = 'button';
+  removeBtn.className = 'rm-opt';
+  removeBtn.style.marginTop = '6px';
+  removeBtn.style.borderTop = '1px solid #eee';
+  removeBtn.style.color = '#c0392b';
+  removeBtn.innerHTML = '<span class="rm-swatch" style="background:transparent; border:1px dashed #c0392b;"></span><span class="rm-text">Status-Tag entfernen</span>';
+  removeBtn.onmousedown = (e) => e.preventDefault();
+  removeBtn.onclick = (e) => {
+    e.stopPropagation();
+    const textNode = document.createTextNode(target.textContent);
+    target.parentNode.replaceChild(textNode, target);
+    closeRiskMenu();
+  };
+  menu.appendChild(removeBtn);
+
+  document.body.appendChild(menu);
+
+  // Position auf Bildschirm halten
+  const rect = menu.getBoundingClientRect();
+  let left = x + 6;
+  let top = y + 6;
+  if (left + rect.width > window.innerWidth - 10) left = Math.max(10, window.innerWidth - rect.width - 10);
+  if (top + rect.height > window.innerHeight - 10) top = Math.max(10, window.innerHeight - rect.height - 10);
+  menu.style.left = left + 'px';
+  menu.style.top = top + 'px';
+
+  // Außerhalb klicken schließt Menü
+  setTimeout(() => document.addEventListener('mousedown', closeRiskMenuOnOutsideClick, true), 0);
+}
+
+function closeRiskMenuOnOutsideClick(e) {
+  const menu = document.getElementById('risk-menu');
+  if (menu && !menu.contains(e.target)) closeRiskMenu();
+}
+
+function closeRiskMenu() {
+  const existing = document.getElementById('risk-menu');
+  if (existing) existing.remove();
+  document.removeEventListener('mousedown', closeRiskMenuOnOutsideClick, true);
+}
+
+function uploadTitleImage() {
+  document.getElementById('title-img-input').click();
+}
+
+function handleTitleImage(ev) {
+  const file = ev.target.files && ev.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    let img = document.querySelector('.title-bg img');
+    if (!img) {
+      // Kein Bild vorhanden: neues <img> in .title-bg anlegen (Fallback: erste <figure> im Dokument)
+      const host = document.querySelector('.title-bg') || document.querySelector('figure');
+      if (host) {
+        img = document.createElement('img');
+        host.appendChild(img);
+      }
+    }
+    if (img) {
+      img.src = e.target.result;
+      img.style.display = '';
+    }
+    showToast('Titelbild aktualisiert');
+  };
+  reader.readAsDataURL(file);
+  ev.target.value = '';
+}
+
+function toggleSidebar() { document.getElementById('file-sidebar').classList.toggle('collapsed'); }
+
+/* ===== SEITENZAHLEN-ENGINE ===== */
+function resetPagination() {
+  document.querySelectorAll('.page-footer').forEach(f => f.remove());
+  document.querySelectorAll('.pag-fixed').forEach(c => { c.classList.remove('pag-fixed'); c.style.removeProperty('--pag-mh'); });
+}
+
+// Atomare Bloecke (page-break-inside:avoid) innerhalb eines Seiten-Containers sammeln
+function paginationAtoms(C, ph) {
+  const atoms = [];
+  const add = (el, keepNext, theadH, tableId) => {
+    const r = el.getBoundingClientRect();
+    if (r.height <= 0) return;
+    atoms.push({ top: r.top, bottom: r.bottom, keepNext: !!keepNext, theadH: theadH || 0, tableId: tableId || 0, el: el });
+  };
+  let tableIdx = 0;
+  C.querySelectorAll('table').forEach(t => {
+    const r = t.getBoundingClientRect();
+    if (r.height <= ph * 0.9) add(t);
+    else {
+      // Grosse Tabelle wird im Druck zeilenweise umbrochen, thead wiederholt sich je Seite
+      const thead = t.querySelector('thead');
+      const th = thead ? thead.getBoundingClientRect().height : 0;
+      tableIdx++;
+      // Startmarker: Chrome schiebt eine mehrseitige Tabelle (break-inside:avoid)
+      // zunaechst komplett an den Anfang der naechsten Seite, dann wird zeilenweise geteilt
+      atoms.push({ top: r.top, bottom: r.bottom, keepNext: false, theadH: th, tableId: tableIdx, tableStart: true, el: t });
+      t.querySelectorAll('tbody tr').forEach(tr => add(tr, false, th, tableIdx));
+    }
+  });
+  C.querySelectorAll('.gap-note, .photo-slot, .chapter-banner').forEach(el => { if (!el.closest('table')) add(el); });
+  C.querySelectorAll('.sec-heading').forEach(el => add(el, true));
+  atoms.sort((a, b) => a.top - b.top);
+  return atoms;
+}
+
+// Simuliert die Druck-Fragmentierung: Bloecke, die eine Seitengrenze schneiden,
+// werden (wie im Print) auf die naechste Seite geschoben -> ergibt Seitenzahl je Container
+function berechneSeiten(C, ph) {
+  const rect = C.getBoundingClientRect();
+  const atoms = paginationAtoms(C, ph);
+  let shift = 0;
+  const tableLastPage = {};
+  const dbg = [];
+  for (const a of atoms) {
+    let top = a.top - rect.top + shift;
+    let bottom = a.bottom - rect.top + shift;
+    // Startmarker einer mehrseitigen Tabelle: komplett auf naechste Seite schieben,
+    // sofern sie nicht ohnehin an einem Seitenanfang beginnt
+    if (a.tableStart) {
+      const page = Math.floor(top / ph);
+      const grenze = (page + 1) * ph;
+      if (bottom > grenze + BREAK_EPS && top > page * ph + BREAK_EPS) {
+        shift += grenze - top;
+        dbg.push('tblStart@' + Math.round(top) + '+' + Math.round(grenze - top));
+        tableLastPage[a.tableId] = page + 1;
+      } else {
+        tableLastPage[a.tableId] = page;
+      }
+      continue;
+    }
+    // Zeile einer umbrochenen Tabelle auf neuer Seite: wiederholter thead schiebt sie nach unten
+    if (a.tableId) {
+      const page = Math.floor(top / ph);
+      if (tableLastPage[a.tableId] !== undefined && page > tableLastPage[a.tableId]) {
+        shift += a.theadH;
+        top += a.theadH;
+        bottom += a.theadH;
+        dbg.push('thead@' + Math.round(top) + '+' + Math.round(a.theadH));
+      }
+    }
+    if (a.keepNext) {
+      let nx = a.el.nextElementSibling;
+      while (nx && (nx.classList.contains('edit-tool') || nx.classList.contains('page-footer'))) nx = nx.nextElementSibling;
+      if (nx) {
+        const nb = nx.getBoundingClientRect().bottom - rect.top + shift;
+        if (nb - top <= ph * 0.9) bottom = Math.max(bottom, nb);
+      }
+    }
+    const h = bottom - top;
+    if (h <= 0 || h > ph * 0.9) { if (a.tableId) tableLastPage[a.tableId] = Math.floor(top / ph); continue; }
+    const pStart = Math.floor(top / ph);
+    const grenze = (pStart + 1) * ph;
+    if (bottom > grenze + BREAK_EPS) {
+      shift += grenze - top + a.theadH; // Push auf naechste Seite (+ thead-Wiederholung bei Tabellenzeilen)
+      dbg.push((a.el.tagName || '?') + (a.el.className ? '.' + String(a.el.className).split(' ')[0] : '') + '@' + Math.round(top) + '+' + Math.round(grenze - top + a.theadH));
+      if (a.tableId) tableLastPage[a.tableId] = pStart + 1;
+    } else if (a.tableId) {
+      tableLastPage[a.tableId] = pStart;
+    }
+  }
+  berechneSeiten.lastShift = shift; // fuer Debug-Kalibrierung
+  berechneSeiten.lastDbg = dbg.join(',');
+  return Math.max(1, Math.ceil((rect.height + shift * SHIFT_DAEMPFUNG - TOLERANZ) / ph));
+}
+
+function updatePagination() {
+  resetPagination();
+  const containers = Array.from(document.querySelectorAll('#doc .title-page, #doc .toc-page, #doc .chapter-page'));
+  if (!containers.length) return;
+  document.body.classList.add('paginating');
+
+  // Exakte Druckseitenhoehe in px ermitteln
+  const probe = document.createElement('div');
+  probe.style.cssText = 'position:absolute; visibility:hidden; height:' + PAGE_H_MM + 'mm; width:10px; top:0; left:0;';
+  document.body.appendChild(probe);
+  const ph = probe.getBoundingClientRect().height;
+  probe.remove();
+
+  // Durchlauf 1: Seiten je Container ermitteln (Gesamtzahl erst danach bekannt)
+  const shifts = [];
+  const dbgs = [];
+  const seiten = containers.map(c => { const n = berechneSeiten(c, ph); shifts.push(berechneSeiten.lastShift); dbgs.push(berechneSeiten.lastDbg); return n; });
+  const total = seiten.reduce((a, b) => a + b, 0);
+
+  // Debug-Kalibrierung: ?pagdebug an URL haengen -> Messwerte als body-Attribut (via --dump-dom lesbar)
+  if (location.search.indexOf('pagdebug') !== -1) {
+    document.body.setAttribute('data-pag-debug', 'ph=' + ph.toFixed(2) + ' | ' + containers.map((c, i) =>
+      (c.id || c.className.split(' ')[0]) + ': n=' + seiten[i] + ' h=' + Math.round(c.getBoundingClientRect().height) + ' s=' + Math.round(shifts[i]) + ' [' + dbgs[i] + ']').join(' | '));
+  }
+
+  // Durchlauf 2: min-height fixieren + Fusszeilen setzen
+  let start = 1;
+  const startMap = {};
+  containers.forEach((c, i) => {
+    const n = seiten[i];
+    if (c.id) startMap['#' + c.id] = start;
+    c.style.position = 'relative';
+    if (n > 1) {
+      // Nur mehrseitige Container auf volle Seitenhoehe fixieren; einseitige
+      // wuerden durch page-break-inside:avoid sonst komplett verschoben (Leerseiten)
+      c.style.setProperty('--pag-mh', (n * ph - MINH_SHAVE).toFixed(2) + 'px');
+      c.classList.add('pag-fixed');
+    }
+    for (let k = 1; k <= n; k++) {
+      const global = start + k - 1;
+      if (global === 1) continue; // Titelseite (Seite 1) ohne Fusszeile
+      const f = document.createElement('div');
+      f.className = 'page-footer edit-ignore';
+      f.textContent = 'Seite ' + global + ' von ' + total;
+      f.style.top = (k * ph - FOOTER_OFFSET).toFixed(2) + 'px';
+      c.appendChild(f);
+    }
+    start += n;
+  });
+
+  // Inhaltsverzeichnis: Startseiten der Kapitel eintragen
+  document.querySelectorAll('.toc-row').forEach(row => {
+    const href = row.getAttribute('href');
+    const num = row.querySelector('.toc-page-num');
+    if (href && num && startMap[href] !== undefined) num.textContent = startMap[href];
+  });
+
+  document.body.classList.remove('paginating');
+}
+
+/* ===== FOTO-SLOTS / BILD-TAUSCH ===== */
+function downscaleImageFile(file, cb) {
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const img = new Image();
+    img.onload = () => {
+      const maxEdge = 1800;
+      let w = img.naturalWidth, h = img.naturalHeight;
+      if (Math.max(w, h) > maxEdge) {
+        const s = maxEdge / Math.max(w, h);
+        w = Math.round(w * s);
+        h = Math.round(h * s);
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      cb(canvas.toDataURL('image/jpeg', 0.82));
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+function pickImage(cb) {
+  const inp = document.createElement('input');
+  inp.type = 'file';
+  inp.accept = 'image/*';
+  inp.style.display = 'none';
+  inp.onchange = (e) => {
+    const f = e.target.files && e.target.files[0];
+    if (f) downscaleImageFile(f, cb);
+    inp.remove();
+  };
+  document.body.appendChild(inp);
+  inp.click();
+}
+
+function setSlotImage(slot, url) {
+  const ph = slot.querySelector('.ps-placeholder');
+  if (ph) ph.remove();
+  let img = slot.querySelector('img');
+  if (!img) {
+    img = document.createElement('img');
+    slot.insertBefore(img, slot.firstChild);
+  }
+  img.src = url;
+  if (!slot.querySelector('figcaption')) {
+    const cap = document.createElement('figcaption');
+    cap.textContent = 'Bildunterschrift';
+    slot.appendChild(cap);
+  }
+  showToast('Foto aktualisiert');
+}
+
+// Klick-Delegation: Foto-Slots (jeder Modus) + Bild-Tausch ueberall (Edit-Modus)
+document.addEventListener('click', (e) => {
+  const slot = e.target.closest('#doc .photo-slot');
+  if (slot && !e.target.closest('.edit-tool')) {
+    if (editMode && e.target.closest('figcaption')) return; // Bildunterschrift editieren
+    e.preventDefault();
+    pickImage(url => setSlotImage(slot, url));
+    return;
+  }
+  if (editMode && e.target.tagName === 'IMG' && e.target.closest('#doc') && !e.target.closest('.edit-tool')) {
+    e.preventDefault();
+    const img = e.target;
+    pickImage(url => { img.src = url; showToast('Bild ersetzt'); });
+  }
+});
+
+function printAsPDF() {
+  const sb = document.getElementById('file-sidebar');
+  const wasCollapsed = sb.classList.contains('collapsed');
+  sb.classList.add('collapsed');
+  const wasEdit = editMode;
+  if (wasEdit) toggleEdit();
+  setTimeout(() => {
+    updatePagination();
+    window.print();
+    if (!wasCollapsed) sb.classList.remove('collapsed');
+    if (wasEdit) toggleEdit();
+  }, 100);
+}
+
+function saveDoc() {
+  const wasEdit = editMode;
+  closeRiskMenu();
+  resetPagination(); // Fusszeilen vor dem Serialisieren entfernen (werden beim Laden neu berechnet)
+  if (wasEdit) { removeEditTools(); applyEditable(false); installRiskTagHandlers(); }
+  const html = '<!DOCTYPE html>\n' + document.documentElement.outerHTML;
+  const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  const base = decodeURIComponent((location.pathname.split(/[\\\/]/).pop() || 'Report.html'));
+  a.download = base.replace(/\.html?$/i, '') + '_bearbeitet.html';
+  a.click();
+  if (wasEdit) { applyEditable(true); installEditTools(); installRiskTagHandlers(); }
+  else { updatePagination(); }
+  showToast('Gespeichert');
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(showToast._tid);
+  showToast._tid = setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+  applyEditable(false);
+  updatePagination();
+});
+
+// Neuberechnung vor jedem Druck (auch Strg+P / headless --print-to-pdf)
+window.addEventListener('beforeprint', () => {
+  if (!document.body.classList.contains('paginating')) updatePagination();
+});
+
+// Tastaturkürzel: Strg+E Bearbeiten, Strg+S Speichern, Strg+P PDF
+document.addEventListener('keydown', (e) => {
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'e') { e.preventDefault(); toggleEdit(); }
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') { e.preventDefault(); saveDoc(); }
+});
+</script>
