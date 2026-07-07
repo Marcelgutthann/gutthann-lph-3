@@ -213,3 +213,9 @@ Verschieben). Foto-Slots (.photo-slot) und jedes <img> sind im Bearbeiten-Modus 
 
 WEITERE EDIT-BEREICHE: "+ Absatz" je Abschnitt, "+ Punkt" je Liste, "+ Zielkarte" im Goal-Grid,
 Kapitel duplizieren, Foto-Slots hinzufuegen/loeschen mit editierbarer Bildunterschrift.
+
+DRUCK-LAYOUT (Pflicht, hoher Design-Anspruch):
+- Lange Tabellen duerfen umbrechen: table page-break-inside:auto, tr page-break-inside:avoid, thead wiederholt sich (table-header-group). Nur kleine Tabellen (<=8 Zeilen) als .keep-together zusammenhalten. NIEMALS grosse Tabellen als Block erzwingen - das erzeugt fast leere Seiten.
+- Lange Fliesstext-Absaetze (>280 Zeichen, ausserhalb von Tabellen) bekommen class="two-col" (zweispaltig, column-gap 8mm) - keine 28cm-Zeilen.
+- .gap-note und kleine Tabellen bleiben bei ihrer Ueberschrift (page-break-inside:avoid, Banner break-after:avoid).
+- Abnahme vor Abgabe: PDF-Testdruck; keine Seite darf nur Banner+Intro zeigen waehrend die Tabelle auf der Folgeseite beginnt.

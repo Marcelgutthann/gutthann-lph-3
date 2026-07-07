@@ -272,6 +272,37 @@ body.paginating .editable { border:none !important; background:transparent !impo
 .add-par-btn { position:absolute; right:30px; top:1px; font-weight:400; }
 @media print { .photo-slot { background:#1a1a1a !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; } }
 
+
+/* ===== DESIGN-PASS v3 (07.07.2026): Tabellen-Umbruch, two-col, keep-together, Verklammerung ===== */
+/* FIX 2: Lange Prosa zweispaltig (A4 quer) - gilt fuer Screen UND Druck/Messung */
+.two-col { column-count:2; column-gap:8mm; orphans:3; widows:3; }
+@media print {
+  /* FIX 1: Tabellen brechen zeilenweise um statt komplett auf die Folgeseite zu springen */
+  table { page-break-inside: auto; font-size:8.5pt; margin:4px 0 8px 0; }
+  table.keep-together { page-break-inside: avoid; }
+  thead { display: table-header-group; } /* Tabellenkopf wiederholt sich je Seite */
+  tr { page-break-inside: avoid; }
+  .proj-table { page-break-inside: avoid; } /* kleine Merkmal/Wert-Tabellen bleiben Block */
+  /* FIX 4: Dichte (4007-Niveau), keine Font-Verkleinerung unter 7pt */
+  th { padding:3px 7px; }
+  td { padding:3px 7px; }
+  p { orphans:3; widows:3; margin-bottom:4px; font-size:9pt; }
+  /* FIX 3: Zusammengehoeriges verklammern */
+  .gap-note { page-break-inside: avoid; break-inside: avoid; }
+  .chapter-banner { page-break-after: avoid; break-after: avoid; }
+  .sec-heading { page-break-after: avoid; }
+  .photo-slot { page-break-inside: avoid; break-inside: avoid; }
+}
+/* Spiegel-Regeln fuer die Messung (body.paginating), damit Messung = Druck */
+body.paginating table { page-break-inside: auto; font-size:8.5pt; margin:4px 0 8px 0; }
+body.paginating table.keep-together { page-break-inside: avoid; }
+body.paginating thead { display: table-header-group; }
+body.paginating th { padding:3px 7px; font-size:8.5pt; }
+body.paginating td { padding:3px 7px; word-wrap:break-word; overflow-wrap:break-word; }
+body.paginating p { orphans:3; widows:3; margin-bottom:4px; font-size:9pt; }
+body.paginating .gap-note { page-break-inside: avoid; break-inside: avoid; }
+body.paginating .photo-slot { page-break-inside: avoid; break-inside: avoid; }
+
 </style>
 </head>
 <body>
@@ -631,9 +662,11 @@ const PAGE_H_MM = 196;      // A4 quer 210mm minus @page-Rand oben 6mm + unten 8
 const TOLERANZ = 6;         // px Toleranz bei der Seitenberechnung (gegen Rundungs-Ueberlauf)
 const FOOTER_OFFSET = 16;   // px Abstand der Fusszeile von der berechneten Seitenunterkante
 const MINH_SHAVE = 3;       // px Sicherheitsabzug bei min-height gegen Ueberlauf auf Folgeseite
-const BREAK_EPS = 2;        // px: Bloecke, die eine Seitengrenze nur minimal ueberragen, gelten als passend
-const SHIFT_DAEMPFUNG = 0.53; // empirisch kalibriert (LPH1-Abgleich mit Chrome-Druck): Chrome bricht
-                              // kompakter um als die Voll-Verlust-Annahme der Simulation; Fenster 0.50-0.60
+const BREAK_EPS = 6;        // px: Bloecke, die eine Seitengrenze nur minimal ueberragen, gelten als passend
+const SHIFT_DAEMPFUNG = 1.0;  // Tabellen brechen jetzt zeilenweise um (page-break-inside:auto):
+                              // Zeilen-Pushes und thead-Wiederholungen sind reale Verluste -> keine Daempfung
+const PRINT_KOMPRESSION = 0.98; // Chrome-Druck rendert ~2% kompakter als die paginating-Messung
+                                // (LPH1-Abgleich 07.07.); alle Messkoordinaten werden damit skaliert
 
 function toggleEdit() {
   editMode = !editMode;
@@ -1189,17 +1222,19 @@ function paginationAtoms(C, ph) {
   let tableIdx = 0;
   C.querySelectorAll('table').forEach(t => {
     const r = t.getBoundingClientRect();
-    if (r.height <= ph * 0.9) add(t);
-    else {
-      // Grosse Tabelle wird im Druck zeilenweise umbrochen, thead wiederholt sich je Seite
-      const thead = t.querySelector('thead');
-      const th = thead ? thead.getBoundingClientRect().height : 0;
-      tableIdx++;
-      // Startmarker: Chrome schiebt eine mehrseitige Tabelle (break-inside:avoid)
-      // zunaechst komplett an den Anfang der naechsten Seite, dann wird zeilenweise geteilt
-      atoms.push({ top: r.top, bottom: r.bottom, keepNext: false, theadH: th, tableId: tableIdx, tableStart: true, el: t });
-      t.querySelectorAll('tbody tr').forEach(tr => add(tr, false, th, tableIdx));
+    // Nur .keep-together/.proj-table bleiben als Block zusammen (page-break-inside:avoid)
+    if (t.classList.contains('keep-together') || t.classList.contains('proj-table')) {
+      if (r.height <= ph * 0.9) add(t);
+      return;
     }
+    // Alle anderen Tabellen brechen zeilenweise um (page-break-inside:auto),
+    // thead wiederholt sich je Seite (table-header-group)
+    const thead = t.querySelector('thead');
+    const th = thead ? thead.getBoundingClientRect().height : 0;
+    tableIdx++;
+    // Startmarker: haelt nur die Startseite der Tabelle fest (kein Push mehr)
+    atoms.push({ top: r.top, bottom: r.bottom, keepNext: false, theadH: th, tableId: tableIdx, tableStart: true, el: t });
+    t.querySelectorAll('tbody tr').forEach(tr => add(tr, false, th, tableIdx));
   });
   C.querySelectorAll('.gap-note, .photo-slot, .chapter-banner').forEach(el => { if (!el.closest('table')) add(el); });
   C.querySelectorAll('.sec-heading').forEach(el => add(el, true));
@@ -1216,20 +1251,12 @@ function berechneSeiten(C, ph) {
   const tableLastPage = {};
   const dbg = [];
   for (const a of atoms) {
-    let top = a.top - rect.top + shift;
-    let bottom = a.bottom - rect.top + shift;
-    // Startmarker einer mehrseitigen Tabelle: komplett auf naechste Seite schieben,
-    // sofern sie nicht ohnehin an einem Seitenanfang beginnt
+    let top = (a.top - rect.top) * PRINT_KOMPRESSION + shift;
+    let bottom = (a.bottom - rect.top) * PRINT_KOMPRESSION + shift;
+    // Startmarker einer zeilenweise umbrechenden Tabelle: nur Startseite merken
+    // (page-break-inside:auto -> Chrome schiebt die Tabelle NICHT mehr komplett um)
     if (a.tableStart) {
-      const page = Math.floor(top / ph);
-      const grenze = (page + 1) * ph;
-      if (bottom > grenze + BREAK_EPS && top > page * ph + BREAK_EPS) {
-        shift += grenze - top;
-        dbg.push('tblStart@' + Math.round(top) + '+' + Math.round(grenze - top));
-        tableLastPage[a.tableId] = page + 1;
-      } else {
-        tableLastPage[a.tableId] = page;
-      }
+      tableLastPage[a.tableId] = Math.floor(top / ph);
       continue;
     }
     // Zeile einer umbrochenen Tabelle auf neuer Seite: wiederholter thead schiebt sie nach unten
@@ -1246,7 +1273,14 @@ function berechneSeiten(C, ph) {
       let nx = a.el.nextElementSibling;
       while (nx && (nx.classList.contains('edit-tool') || nx.classList.contains('page-footer'))) nx = nx.nextElementSibling;
       if (nx) {
-        const nb = nx.getBoundingClientRect().bottom - rect.top + shift;
+        let nb;
+        if (nx.tagName === 'TABLE' && !nx.classList.contains('keep-together') && !nx.classList.contains('proj-table')) {
+          // Zeilenweise umbrechende Tabelle: nur Kopf + erste Zeile muessen zur Ueberschrift passen
+          const fr = nx.querySelector('tbody tr');
+          nb = ((fr ? fr.getBoundingClientRect().bottom : nx.getBoundingClientRect().top) - rect.top) * PRINT_KOMPRESSION + shift;
+        } else {
+          nb = (nx.getBoundingClientRect().bottom - rect.top) * PRINT_KOMPRESSION + shift;
+        }
         if (nb - top <= ph * 0.9) bottom = Math.max(bottom, nb);
       }
     }
@@ -1264,7 +1298,7 @@ function berechneSeiten(C, ph) {
   }
   berechneSeiten.lastShift = shift; // fuer Debug-Kalibrierung
   berechneSeiten.lastDbg = dbg.join(',');
-  return Math.max(1, Math.ceil((rect.height + shift * SHIFT_DAEMPFUNG - TOLERANZ) / ph));
+  return Math.max(1, Math.ceil((rect.height * PRINT_KOMPRESSION + shift * SHIFT_DAEMPFUNG - TOLERANZ) / ph));
 }
 
 function updatePagination() {
